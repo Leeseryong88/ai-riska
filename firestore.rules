@@ -1,0 +1,62 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Rules
+    match /posts/{post} {
+      allow read, write: if true;
+    }
+
+    match /purposes/{purposeId} {
+      allow read: if true; 
+      allow create: if isAuthenticated() && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
+    }
+
+    match /logs/{logId} {
+      // Anyone can create a log
+      allow create: if request.resource.data.ownerId != null;
+
+      // Only the owner (admin) can list/read all logs
+      allow read: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
+
+      allow update, delete: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
+    }
+
+    match /users/{userId} {
+      allow get: if true;
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // AI Service Results
+    match /photoAnalysis/{docId} {
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /assessments/{docId} {
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /healthSafetyPlans/{docId} {
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /managementFeePlans/{docId} {
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /safety_logs/{docId} {
+      allow create: if isAuthenticated() && request.resource.data.managerId == request.auth.uid;
+      allow read, update, delete: if isAuthenticated() && resource.data.managerId == request.auth.uid;
+    }
+  }
+}

@@ -1,0 +1,36 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    match /logs/{adminId}/{fileName} {
+      // Allow anyone to upload (visitors need this for signatures and photos)
+      allow write: if true;
+
+      // get: Allow anyone to get the download URL (needed right after upload)
+      // list: Only the admin who owns the folder can list files
+      allow get: if true;
+      allow list: if isAuthenticated() && request.auth.uid == adminId;
+    }
+
+    match /branding/{adminId}/{fileName} {
+      // Admins manage their own branding assets
+      allow write: if isAuthenticated() && request.auth.uid == adminId;
+      // Anyone can read branding assets to see the UI
+      allow read: if true;
+    }
+
+    match /photoAnalysis/{userId}/{fileName} {
+      // Users can manage their own photo analysis images
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    match /safety-logs/{userId}/{fileName} {
+      // Users can manage their own safety log photos
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+    }
+  }
+}

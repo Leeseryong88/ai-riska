@@ -1,0 +1,42 @@
+{
+  "name": "image-analysis-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.0",
+    "@vercel/analytics": "^1.5.0",
+    "autoprefixer": "^10.4.17",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "firebase": "^12.7.0",
+    "framer-motion": "^12.38.0",
+    "html2pdf.js": "^0.10.3",
+    "lucide-react": "^1.8.0",
+    "modern-screenshot": "^4.7.0",
+    "next": "14.1.0",
+    "postcss": "^8.4.35",
+    "qrcode.react": "^4.2.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-signature-canvas": "^1.1.0-alpha.2",
+    "resend": "^6.6.0",
+    "tailwind-merge": "^3.5.0",
+    "tailwindcss": "^3.4.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.5",
+    "@types/react": "^18.2.48",
+    "@types/react-dom": "^18.2.18",
+    "@types/react-signature-canvas": "^1.0.7",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "14.1.0",
+    "typescript": "^5.3.3"
+  }
+}
