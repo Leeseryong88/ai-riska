@@ -55,7 +55,7 @@ interface DashboardData {
   totalPartners: number;
   feedbackAcknowledged: number;
   feedbackTotal: number;
-  logDates: Map<string, boolean>;
+  logDates: Map<string, number>;
   permitCounts: Map<string, number>;
   todoStats: Map<string, { done: number; total: number }>;
   todos: any[];
@@ -93,10 +93,12 @@ export default function VisualDashboard() {
       const logsQuery = query(logsRef, where('managerId', '==', user.uid));
       const logsSnapshot = await getDocs(logsQuery);
       const safetyLogs = logsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      const logDatesMap = new Map<string, boolean>();
+      const logDatesMap = new Map<string, number>();
       safetyLogs.forEach(item => {
         const date = item.date;
-        if (date) logDatesMap.set(date, true);
+        if (date) {
+          logDatesMap.set(date, (logDatesMap.get(date) || 0) + 1);
+        }
       });
 
       // 2. 작업 허가서
@@ -335,9 +337,9 @@ export default function VisualDashboard() {
                   <span className="mb-0.5 leading-none">{day.getDate()}</span>
                   
                   <div className="flex flex-col gap-0.5 w-full items-center scale-[0.85] origin-top">
-                    {hasLog && (
+                    {hasLog && hasLog > 0 && (
                       <span className={`px-1 py-0.5 rounded-[4px] leading-none whitespace-nowrap ${isSelected ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-700'}`}>
-                        일지(o)
+                        일지({hasLog})
                       </span>
                     )}
                     {permitCount > 0 && (
