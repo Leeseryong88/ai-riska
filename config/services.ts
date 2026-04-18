@@ -102,11 +102,26 @@ export const services: ServiceDefinition[] = [
     highlights: ['예산 계산', '문서 생성'],
   },
   {
+    id: 'safety-manager-todo',
+    title: 'TO DO LIST',
+    shortTitle: 'TO DO LIST',
+    description: '현장 안전관리 업무를 할 일 목록으로 정리하고 완료 여부를 확인합니다.',
+    href: '/safety-log',
+    category: 'document',
+    status: 'stable',
+    icon: 'document',
+    mobilePriority: 'medium',
+    desktopMode: 'workspace',
+    featured: true,
+    accent: { from: 'from-indigo-500', to: 'to-blue-600' },
+    highlights: ['할 일 목록', '완료 체크', '기한·메모'],
+  },
+  {
     id: 'safety-log',
     title: '일일 안전일지',
     shortTitle: '안전일지',
     description: '현장의 일일 안전 점검 사항과 작업 내용을 기록하고 관리하는 일지를 작성합니다.',
-    href: '/safety-log',
+    href: '/safety-log/daily',
     category: 'document',
     status: 'stable',
     icon: 'document',
@@ -198,7 +213,32 @@ export const primaryServices = services.filter((service) => service.featured);
 
 export function getServiceByHref(href: string | null | undefined) {
   if (!href) return undefined;
-  return services.find((service) => service.href === href);
+  const exact = services.find((service) => service.href === href);
+  if (exact) return exact;
+  if (href.startsWith('/safety-log/daily')) {
+    return services.find((s) => s.id === 'safety-log');
+  }
+  if (href.startsWith('/safety-log')) {
+    return services.find((s) => s.id === 'safety-manager-todo');
+  }
+  return undefined;
+}
+
+/** 사이드바·탑바 활성 표시 */
+export function isServiceActive(
+  service: ServiceDefinition,
+  pathname: string,
+  search: string
+): boolean {
+  if (service.id === 'safety-log') {
+    return pathname === '/safety-log/daily' || pathname.startsWith('/safety-log/daily/');
+  }
+  if (service.id === 'safety-manager-todo') {
+    return pathname === '/safety-log';
+  }
+  const base = service.href.split('?')[0];
+  if (pathname !== base) return false;
+  return !service.href.includes('?');
 }
 
 export function getRelatedServices(href: string | null | undefined) {

@@ -59,6 +59,13 @@ service cloud.firestore {
       allow read, update, delete: if isAuthenticated() && resource.data.managerId == request.auth.uid;
     }
 
+    // 안전관리자 할 일 (TO DO LIST) — 로그인 사용자 본인 managerId만
+    match /safety_manager_todos/{docId} {
+      allow create: if isAuthenticated() && request.resource.data.managerId == request.auth.uid;
+      allow get, list: if isAuthenticated() && resource.data.managerId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.managerId == request.auth.uid;
+    }
+
     match /contractor_partners/{docId} {
       allow create: if isAuthenticated() && request.resource.data.managerId == request.auth.uid;
       allow read, update, delete: if isAuthenticated() && resource.data.managerId == request.auth.uid;
@@ -77,14 +84,14 @@ service cloud.firestore {
         && request.resource.data.body.size() > 0
         && request.resource.data.body.size() <= 20000;
       allow read, delete: if isAuthenticated() && resource.data.managerId == request.auth.uid;
-      // 관리자만 확인(acknowledged) 처리 — 본문·작성자 등 제출 데이터는 변경 불가
+      // 관리자만 확인(acknowledged) 처리 — 변경 허용 필드는 acknowledged / acknowledgedAt 뿐
+      // (authorName·department 등 선택 필드 누락 시 == 비교가 실패하므로 MapDiff 사용)
       allow update: if isAuthenticated()
         && resource.data.managerId == request.auth.uid
         && request.resource.data.managerId == resource.data.managerId
         && request.resource.data.body == resource.data.body
         && request.resource.data.createdAt == resource.data.createdAt
-        && request.resource.data.authorName == resource.data.authorName
-        && request.resource.data.department == resource.data.department;
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['acknowledged', 'acknowledgedAt']);
     }
   }
 }

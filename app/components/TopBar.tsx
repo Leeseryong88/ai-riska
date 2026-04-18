@@ -1,17 +1,13 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { getServiceByHref, primaryServices, services } from '@/config/services';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { getServiceByHref, isServiceActive, services } from '@/config/services';
 import ServiceGlyph from '@/components/navigation/ServiceGlyph';
 import { useAuth } from '@/app/context/AuthContext';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/app/lib/firebase';
-
-function isActivePath(pathname: string, href: string) {
-  return pathname === href;
-}
 
 interface TopBarProps {
   onOpenContact?: () => void;
@@ -19,11 +15,14 @@ interface TopBarProps {
 
 export default function TopBar({ onOpenContact }: TopBarProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { user, userProfile } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const currentService = getServiceByHref(pathname);
+  const search = searchParams.toString();
+  const hrefForService = `${pathname}${search ? `?${search}` : ''}`;
+  const currentService = getServiceByHref(hrefForService);
 
   const handleLogout = async () => {
     try {
@@ -193,10 +192,16 @@ export default function TopBar({ onOpenContact }: TopBarProps) {
                 <div className="space-y-1">
                   {services
                     .filter((service) =>
-                  ['work-permit', 'safety-log', 'contractor-partners', 'worker-feedback'].includes(service.id)
+                  [
+                    'work-permit',
+                    'safety-manager-todo',
+                    'safety-log',
+                    'contractor-partners',
+                    'worker-feedback',
+                  ].includes(service.id)
                 )
                     .map((service) => {
-                      const isActive = service.href === pathname;
+                      const isActive = isServiceActive(service, pathname, search);
                       return (
                         <Link
                           key={service.id}
@@ -223,7 +228,7 @@ export default function TopBar({ onOpenContact }: TopBarProps) {
                   {services
                     .filter((service) => ['camera', 'assessment', 'health-safety-plan', 'safety-management-fee'].includes(service.id))
                     .map((service) => {
-                      const isActive = service.href === pathname;
+                      const isActive = isServiceActive(service, pathname, search);
                       return (
                         <Link
                           key={service.id}
@@ -250,7 +255,7 @@ export default function TopBar({ onOpenContact }: TopBarProps) {
                   {services
                     .filter((service) => ['storage'].includes(service.id))
                     .map((service) => {
-                      const isActive = service.href === pathname;
+                      const isActive = isServiceActive(service, pathname, search);
                       return (
                         <Link
                           key={service.id}
