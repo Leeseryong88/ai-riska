@@ -77,7 +77,14 @@ service cloud.firestore {
         && request.resource.data.body.size() > 0
         && request.resource.data.body.size() <= 20000;
       allow read, delete: if isAuthenticated() && resource.data.managerId == request.auth.uid;
-      allow update: if false;
+      // 관리자만 확인(acknowledged) 처리 — 본문·작성자 등 제출 데이터는 변경 불가
+      allow update: if isAuthenticated()
+        && resource.data.managerId == request.auth.uid
+        && request.resource.data.managerId == resource.data.managerId
+        && request.resource.data.body == resource.data.body
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.authorName == resource.data.authorName
+        && request.resource.data.department == resource.data.department;
     }
   }
 }

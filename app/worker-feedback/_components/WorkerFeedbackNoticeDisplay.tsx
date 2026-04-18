@@ -7,10 +7,12 @@ import type { WorkerFeedbackTemplateContent } from '../_lib/templateContent';
 interface Props {
   content: WorkerFeedbackTemplateContent;
   className?: string;
+  /** false면 글머리를 한 줄 말줄임하지 않고 전체 표시 (근로자 접수 화면 등) */
+  truncateBullets?: boolean;
 }
 
 /** 접수 페이지·관리자 미리보기 공통: 편집 내용이 그대로 보이도록 동일 마크업 */
-export function WorkerFeedbackNoticeDisplay({ content, className }: Props) {
+export function WorkerFeedbackNoticeDisplay({ content, className, truncateBullets = true }: Props) {
   const bullets = content.bullets.map((b) => b.trim()).filter(Boolean);
 
   return (
@@ -25,11 +27,17 @@ export function WorkerFeedbackNoticeDisplay({ content, className }: Props) {
       {bullets.length > 0 && (
         <ul className="mt-3 space-y-1.5 text-gray-600">
           {bullets.map((line, i) => (
-            <li key={i} className="flex min-w-0 gap-2 leading-normal">
+            <li key={i} className="flex min-w-0 gap-2 leading-relaxed">
               <span className="shrink-0 select-none" aria-hidden>
                 •
               </span>
-              <span className="min-w-0 truncate" title={line}>
+              <span
+                className={cn(
+                  'min-w-0 flex-1',
+                  truncateBullets ? 'truncate' : 'break-words whitespace-normal'
+                )}
+                title={truncateBullets ? line : undefined}
+              >
                 {line}
               </span>
             </li>

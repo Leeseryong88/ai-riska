@@ -117,7 +117,9 @@ export default function WorkerFeedbackPublicPage() {
           </div>
 
           <div className="p-4 sm:p-6">
-            {structured && <WorkerFeedbackNoticeDisplay content={structured} className="mb-0 shadow-none" />}
+            {structured && (
+              <WorkerFeedbackNoticeDisplay content={structured} className="mb-0 shadow-none" truncateBullets={false} />
+            )}
             {!structured && legacyHtml && (
               <div
                 className="rounded-xl border border-gray-200 bg-white p-4 text-sm leading-relaxed text-gray-700 shadow-sm [&_h2]:text-base [&_h2]:font-black [&_h2]:text-gray-900 [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:mb-1"
