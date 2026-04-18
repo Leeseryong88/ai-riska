@@ -11,7 +11,12 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
   // 인증 없이 접근 가능한 경로 확인
   const isPublicPath = (path: string) => {
-    return path === '/' || path === '/login' || path.startsWith('/work-permit/v/');
+    return (
+      path === '/' ||
+      path === '/login' ||
+      path.startsWith('/work-permit/v/') ||
+      path.startsWith('/worker-feedback/v/')
+    );
   };
 
   useEffect(() => {

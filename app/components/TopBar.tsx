@@ -192,7 +192,9 @@ export default function TopBar({ onOpenContact }: TopBarProps) {
                 </p>
                 <div className="space-y-1">
                   {services
-                    .filter((service) => ['work-permit', 'safety-log'].includes(service.id))
+                    .filter((service) =>
+                  ['work-permit', 'safety-log', 'contractor-partners', 'worker-feedback'].includes(service.id)
+                )
                     .map((service) => {
                       const isActive = service.href === pathname;
                       return (

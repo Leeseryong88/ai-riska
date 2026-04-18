@@ -67,7 +67,9 @@ export default function WorkspaceShell({
                 Safety Docs
               </div>
               {services
-                .filter((service) => ['work-permit', 'safety-log'].includes(service.id))
+                .filter((service) =>
+                ['work-permit', 'safety-log', 'contractor-partners', 'worker-feedback'].includes(service.id)
+              )
                 .map((service) => {
                   const isActive = service.href === serviceHref;
                   return (

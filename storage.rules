@@ -32,5 +32,9 @@ service firebase.storage {
       // Users can manage their own safety log photos
       allow read, write: if isAuthenticated() && request.auth.uid == userId;
     }
+
+    match /contractor-partners/{userId}/{allPaths=**} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+    }
   }
 }

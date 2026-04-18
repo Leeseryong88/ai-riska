@@ -58,5 +58,26 @@ service cloud.firestore {
       allow create: if isAuthenticated() && request.resource.data.managerId == request.auth.uid;
       allow read, update, delete: if isAuthenticated() && resource.data.managerId == request.auth.uid;
     }
+
+    match /contractor_partners/{docId} {
+      allow create: if isAuthenticated() && request.resource.data.managerId == request.auth.uid;
+      allow read, update, delete: if isAuthenticated() && resource.data.managerId == request.auth.uid;
+    }
+
+    // 근로자 의견청취: 관리자별 안내 HTML (공개 조회는 제출 페이지용)
+    match /worker_feedback_settings/{userId} {
+      allow get: if true;
+      allow create, update, delete: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // 근로자 의견 제출 (비로그인 제출 허용, 관리자만 열람·삭제)
+    match /worker_feedback_submissions/{docId} {
+      allow create: if request.resource.data.managerId is string
+        && request.resource.data.body is string
+        && request.resource.data.body.size() > 0
+        && request.resource.data.body.size() <= 20000;
+      allow read, delete: if isAuthenticated() && resource.data.managerId == request.auth.uid;
+      allow update: if false;
+    }
   }
 }

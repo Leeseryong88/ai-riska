@@ -39,6 +39,22 @@
         { "fieldPath": "userId", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "contractor_partners",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "managerId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "worker_feedback_submissions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "managerId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
