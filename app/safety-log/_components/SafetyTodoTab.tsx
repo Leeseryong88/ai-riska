@@ -84,7 +84,7 @@ function formatDraftDueBarLabel(iso: string): string {
   });
 }
 
-/** 네이티브 date 입력은 히트박스가 좁은 경우가 많아, 버튼에서 이걸 호출해 전체 영역 클릭과 동일하게 처리 */
+/** Chromium 등에서 type=date 입력의 히트 영역이 왼쪽에만 잡히는 경우가 있어, 프로그램으로 열어 전체 버튼과 동일하게 동작시킴 */
 function openNativeDatePicker(input: HTMLInputElement | null) {
   if (!input) return;
   try {
@@ -98,7 +98,7 @@ function openNativeDatePicker(input: HTMLInputElement | null) {
   input.click();
 }
 
-/** 목록 행 — date input 히트 영역 문제 회피용 */
+/** 목록 행 — 숨김 input은 앵커·값만 담고, 투명 버튼으로 전체 영역 클릭 시 달력 오픈 */
 function RowDueDatePill({
   rowId,
   value,
@@ -114,7 +114,14 @@ function RowDueDatePill({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   return (
-    <>
+    <div
+      className={cn(
+        'relative inline-flex min-h-[2rem] min-w-0 max-w-full overflow-hidden rounded-full border px-3 py-1.5 text-left text-xs font-semibold shadow-sm transition-colors',
+        'border-amber-200/90 bg-amber-50 text-amber-900',
+        !disabled && 'hover:bg-amber-100/95',
+        disabled && 'opacity-50'
+      )}
+    >
       <input
         id={`row-due-${rowId}`}
         ref={inputRef}
@@ -123,23 +130,24 @@ function RowDueDatePill({
         onChange={(e) => onPick(e.target.value)}
         disabled={disabled}
         tabIndex={-1}
-        className="sr-only"
+        className="pointer-events-none absolute inset-0 z-0 h-full min-h-[2rem] w-full opacity-0"
+        aria-hidden
       />
+      <span className="pointer-events-none relative z-[1] flex min-w-0 items-center gap-1.5" aria-hidden>
+        <CalendarDays className="h-3.5 w-3.5 shrink-0" />
+        <span className="min-w-0 truncate">{labelText}</span>
+      </span>
       <button
         type="button"
         disabled={disabled}
         onClick={() => openNativeDatePicker(inputRef.current)}
         className={cn(
-          'inline-flex min-h-[2rem] min-w-0 max-w-full items-center gap-1.5 rounded-full border px-3 py-1.5 text-left text-xs font-semibold shadow-sm transition-colors',
-          'border-amber-200/90 bg-amber-50 text-amber-900 hover:bg-amber-100/95',
-          disabled && 'pointer-events-none opacity-50'
+          'absolute inset-0 z-[2] cursor-pointer rounded-full border-0 bg-transparent p-0',
+          disabled && 'cursor-not-allowed'
         )}
         aria-label={value ? '기한 날짜 변경' : '기한 추가'}
-      >
-        <CalendarDays className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        <span className="min-w-0 truncate">{labelText}</span>
-      </button>
-    </>
+      />
+    </div>
   );
 }
 
@@ -493,7 +501,7 @@ export function SafetyTodoTab() {
               addHint ? 'border-amber-400 ring-1 ring-amber-400/30' : 'border-gray-300'
             )}
           >
-            <div className="relative flex min-h-11 min-w-0 shrink-0 items-stretch border-b border-gray-200 bg-slate-50 sm:border-b-0 sm:border-r">
+            <div className="relative flex min-h-11 min-w-0 shrink-0 items-stretch overflow-hidden border-b border-gray-200 bg-slate-50 sm:border-b-0 sm:border-r">
               <input
                 id="safety-todo-draft-due"
                 ref={draftDueInputRef}
@@ -502,24 +510,32 @@ export function SafetyTodoTab() {
                 onChange={(e) => setDraftDueDate(e.target.value)}
                 disabled={adding}
                 tabIndex={-1}
-                className="sr-only"
+                className={cn(
+                  'pointer-events-none absolute inset-0 z-0 min-h-11 opacity-0 disabled:cursor-not-allowed',
+                  draftDueDate ? 'right-10' : 'right-0'
+                )}
+                aria-hidden
               />
-              <button
-                type="button"
-                className="flex min-h-11 min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-slate-100/90 disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={adding}
-                aria-label={draftDueDate ? `기한 ${formatDraftDueBarLabel(draftDueDate)}, 날짜 변경` : '기한 추가, 날짜 선택'}
-                onClick={() => openNativeDatePicker(draftDueInputRef.current)}
-              >
+              <div className="pointer-events-none relative z-[1] flex min-h-11 min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left">
                 <CalendarDays className="h-5 w-5 shrink-0 text-blue-600" aria-hidden />
                 <span className="min-w-0 flex-1 text-sm font-semibold text-slate-800">
                   {formatDraftDueBarLabel(draftDueDate)}
                 </span>
-              </button>
+              </div>
+              <button
+                type="button"
+                disabled={adding}
+                onClick={() => openNativeDatePicker(draftDueInputRef.current)}
+                className={cn(
+                  'absolute inset-0 z-[2] cursor-pointer border-0 bg-transparent p-0',
+                  draftDueDate ? 'right-10' : 'right-0'
+                )}
+                aria-label={draftDueDate ? `기한 ${formatDraftDueBarLabel(draftDueDate)}, 날짜 변경` : '기한 추가, 날짜 선택'}
+              />
               {draftDueDate ? (
                 <button
                   type="button"
-                  className="relative z-10 flex h-11 w-10 shrink-0 items-center justify-center border-l border-gray-200 text-slate-500 transition-colors hover:bg-slate-200/80 hover:text-slate-800"
+                  className="relative z-[3] flex h-11 w-10 shrink-0 items-center justify-center border-l border-gray-200 text-slate-500 transition-colors hover:bg-slate-200/80 hover:text-slate-800"
                   onClick={(e) => {
                     e.preventDefault();
                     setDraftDueDate('');
