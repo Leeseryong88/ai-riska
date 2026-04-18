@@ -47,15 +47,15 @@ export async function POST(request: NextRequest) {
 
 [제공된 답변 데이터]
 1. 공사명: ${answers.q1_name || '정보 없음'}
-2. 현장 주소: ${answers.q1_address || '정보 없음'}
+2. 주소: ${answers.q1_address || '정보 없음'}
 3. 공사 기간: ${answers.q2 || '정보 없음'}
 4. 공사계약금액: ${answers.q3 || '정보 없음'}
-5. 시공자 및 현장 조직 정보: ${answers.q4 || '정보 없음'}
+5. 시공자 및 조직 정보: ${answers.q4 || '정보 없음'}
 6. 안전보건 관리 조직 구성 상세: ${answers.q5 || '정보 없음'}
 7. 안전보건관리비 사용계획: ${answers.q6 || '정보 없음'}
 8. 경영방침 및 목표: ${answers.q7 || '정보 없음'}
 9. 안전보건 교육 계획: ${answers.q8 || '정보 없음'}
-10. 현장 자체 점검 계획: ${answers.q9 || '정보 없음'}
+10. 자체 점검 계획: ${answers.q9 || '정보 없음'}
 11. 비상대응 및 병원 정보: ${answers.q10 || '정보 없음'}
 12. 근로자 건강관리 대책: ${answers.q11 || '정보 없음'}
 13. 협력업체 관리 계획: ${answers.q12 || '정보 없음'}

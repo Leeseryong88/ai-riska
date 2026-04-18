@@ -24,7 +24,7 @@ function SafetyTodoPageContent() {
     <WorkspaceShell
       serviceHref="/safety-log"
       title="TO DO LIST"
-      description="기한과 메모를 활용해 현장 안전관리 할 일을 한곳에서 확인합니다."
+      description="기한과 메모를 활용해 안전관리 할 일을 한곳에서 확인합니다."
     >
       <SafetyTodoTab />
     </WorkspaceShell>

@@ -185,7 +185,7 @@ function SafetyDailyLogContent() {
     <WorkspaceShell
       serviceHref="/safety-log/daily"
       title="일일 안전일지"
-      description="현장의 안전 상태와 작업 내용을 일일 단위로 기록하고 관리합니다."
+      description="안전 상태와 작업 내용을 일일 단위로 기록하고 관리합니다."
     >
       <div className="mx-auto max-w-4xl">
         <AnimatePresence mode="wait">
@@ -261,7 +261,7 @@ function SafetyDailyLogContent() {
                 </div>
                 <div>
                   <h2 className="text-2xl font-black text-gray-900">새 안전일지 작성</h2>
-                  <p className="text-sm font-medium text-gray-500">오늘의 현장 안전 정보를 기록하세요.</p>
+                  <p className="text-sm font-medium text-gray-500">오늘의 안전 정보를 기록하세요.</p>
                 </div>
               </div>
               <LogForm onSubmit={handleCreateLog} onCancel={() => setView('list')} submitting={isSubmitting} />

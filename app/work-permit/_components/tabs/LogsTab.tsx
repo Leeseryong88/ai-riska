@@ -2,12 +2,12 @@
 
 import React, { useEffect, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { collection, query, getDocs, orderBy, where, Timestamp, limit, startAfter, QueryDocumentSnapshot, DocumentData, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, getDocs, orderBy, where, Timestamp, limit, startAfter, QueryDocumentSnapshot, DocumentData, doc, updateDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '@/app/lib/firebase';
 import { VisitorLog, VisitPurpose } from '../../_lib/types';
 import { Card, Button, Label, Input } from '../ui/Button';
 import { uploadBase64 } from '../../_lib/storage';
-import { Filter, Download, Eye, X, Loader2, Calendar, ChevronDown, PenTool, Save, ClipboardList, Printer } from 'lucide-react';
+import { Filter, Download, Eye, X, Loader2, Calendar, ChevronDown, PenTool, Save, ClipboardList, Printer, ShieldAlert } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
 const SignaturePad = dynamic(() => import('../SignaturePad').then(mod => mod.SignaturePad), { ssr: false });
@@ -32,11 +32,13 @@ export const LogsTab: React.FC = () => {
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [showUnsignedOnly, setShowUnsignedOnly] = useState(false);
   
   // Date filter states
   const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [originalDates, setOriginalDates] = useState<{start: string, end: string} | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -209,8 +211,47 @@ export const LogsTab: React.FC = () => {
     }
   };
 
+  const handleDeleteLog = async (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (!confirm('삭제하시겠습니까?')) return;
+    
+    try {
+      await deleteDoc(doc(db, 'logs', id));
+      setLogs(prev => prev.filter(l => l.id !== id));
+      if (selectedLog?.id === id) setSelectedLog(null);
+      alert('삭제되었습니다.');
+    } catch (error) {
+      console.error('Error deleting log:', error);
+      alert('삭제 중 오류가 발생했습니다.');
+    }
+  };
+
+  const toggleUnsignedOnly = () => {
+    const nextState = !showUnsignedOnly;
+    setShowUnsignedOnly(nextState);
+
+    if (nextState) {
+      // 모든 날짜를 보기 위해 아주 넓은 범위로 설정
+      setOriginalDates({ start: startDate, end: endDate });
+      const wideStart = '1900-01-01';
+      const wideEnd = '2100-12-31';
+      setStartDate(wideStart);
+      setEndDate(wideEnd);
+      fetchLogs(wideStart, wideEnd, false);
+    } else {
+      // 이전 날짜 필터로 복구 (기본은 오늘)
+      const prevStart = originalDates?.start || format(new Date(), 'yyyy-MM-dd');
+      const prevEnd = originalDates?.end || format(new Date(), 'yyyy-MM-dd');
+      setStartDate(prevStart);
+      setEndDate(prevEnd);
+      fetchLogs(prevStart, prevEnd, false);
+      setOriginalDates(null);
+    }
+  };
+
   const filteredLogs = logs.filter(log => 
-    selectedPurposeId === 'all' || log.purposeId === selectedPurposeId
+    (selectedPurposeId === 'all' || log.purposeId === selectedPurposeId) &&
+    (!showUnsignedOnly || !log.adminSignature)
   );
 
   const getFieldLabel = (key: string, log: VisitorLog) => {
@@ -297,16 +338,34 @@ export const LogsTab: React.FC = () => {
           <Button 
             variant="outline" 
             className={cn(
-              "gap-2 w-full md:min-w-[240px] justify-start font-normal h-11 md:h-10",
+              "gap-2 w-full md:min-w-[200px] justify-start font-normal h-11 md:h-10",
               isFilterOpen && "border-blue-500 ring-1 ring-blue-500"
             )}
             onClick={() => setIsFilterOpen(!isFilterOpen)}
           >
             <Calendar className="w-4 h-4 text-blue-600 flex-shrink-0" />
             <span className="flex-1 text-left truncate flex items-center gap-2">
-              <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-bold border border-blue-100 flex-shrink-0">시작일 기준</span>
-              {startDate === endDate ? startDate : `${startDate} ~ ${endDate}`}
+              <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-bold border border-blue-100 flex-shrink-0">
+                {showUnsignedOnly ? '모든 날짜' : '시작일 기준'}
+              </span>
+              {showUnsignedOnly ? '전체 기간 데이터' : (startDate === endDate ? startDate : `${startDate} ~ ${endDate}`)}
             </span>
+          </Button>
+          <Button
+            variant={showUnsignedOnly ? 'primary' : 'outline'}
+            className={cn(
+              "gap-2 w-full md:w-auto font-bold h-11 md:h-10 transition-all shrink-0 px-3",
+              showUnsignedOnly ? "bg-red-600 hover:bg-red-700 text-white border-red-600 shadow-sm shadow-red-100" : "text-slate-600"
+            )}
+            onClick={toggleUnsignedOnly}
+          >
+            <ShieldAlert className={cn("w-4 h-4", showUnsignedOnly ? "text-white" : "text-red-500")} />
+            <span className="text-xs">{showUnsignedOnly ? '목록 보기' : '미서명만'}</span>
+            {logs.filter(l => !l.adminSignature).length > 0 && !showUnsignedOnly && (
+              <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black text-white ml-0.5">
+                {logs.filter(l => !l.adminSignature).length}
+              </span>
+            )}
           </Button>
         </div>
 
@@ -358,7 +417,7 @@ export const LogsTab: React.FC = () => {
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">작업 종류</th>
-                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">작업 시작일</th>
+                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">작업일시</th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">작업자명</th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">연락처</th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">제출 일시</th>
@@ -392,7 +451,10 @@ export const LogsTab: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
-                      {log.data?.work_start ? format(new Date(log.data.work_start), 'yyyy-MM-dd HH:mm') : (log.data?.work_start_date || '-')}
+                      <div className="text-xs space-y-0.5">
+                        <p>{log.data?.work_start ? format(new Date(log.data.work_start), 'yyyy-MM-dd HH:mm') : (log.data?.work_start_date || '-')}</p>
+                        <p className="text-gray-400">~ {log.data?.work_end ? format(new Date(log.data.work_end), 'yyyy-MM-dd HH:mm') : (log.data?.work_end_date || '-')}</p>
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-sm font-bold text-gray-900">{log.visitorName}</td>
                     <td className="px-6 py-4 text-sm text-gray-500">{log.visitorContact}</td>
@@ -418,6 +480,14 @@ export const LogsTab: React.FC = () => {
                             <PenTool className="w-3 h-3" /> 서명
                           </Button>
                         )}
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-8 px-2 text-[10px] gap-1 bg-red-50 text-red-600 border-red-100 hover:bg-red-100"
+                          onClick={(e) => handleDeleteLog(log.id, e)}
+                        >
+                          <X className="w-3 h-3" /> 반려
+                        </Button>
                         <Button variant="ghost" size="sm" onClick={() => setSelectedLog(log)}>
                           <Eye className="w-4 h-4" />
                         </Button>
@@ -485,6 +555,17 @@ export const LogsTab: React.FC = () => {
                         <PenTool className="w-2.5 h-2.5" /> 서명
                       </Button>
                     )}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-7 px-1.5 text-[9px] gap-1 bg-red-50 text-red-600 border-red-100"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteLog(log.id, e);
+                      }}
+                    >
+                      <X className="w-2.5 h-2.5" /> 반려
+                    </Button>
                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                       <Eye className="w-4 h-4 text-gray-400" />
                     </Button>
@@ -685,7 +766,7 @@ export const LogsTab: React.FC = () => {
                   {/* Signature Section */}
                   <section className="mt-16 pt-10 border-t-2 border-gray-900">
                     <div className="flex flex-col items-center space-y-6">
-                      <p className="text-sm font-bold text-gray-900 text-center">위와 같이 안전작업 허가서를 제출하며, 현장 안전 수칙을 준수할 것을 서약합니다.</p>
+                      <p className="text-sm font-bold text-gray-900 text-center">위와 같이 안전작업 허가서를 제출하며, 안전 수칙을 준수할 것을 서약합니다.</p>
                       <div className="flex items-center gap-12">
                         <div className="text-center">
                           <p className="text-[10px] font-bold text-gray-400 mb-2">작업자 확인</p>

@@ -383,7 +383,7 @@ export default function VisitorFormPage() {
             {/* Signature Section */}
             <section className="mt-12 pt-6 border-t-2 border-gray-900">
               <div className="flex flex-col items-center space-y-4">
-                <p className="text-[10px] font-bold text-gray-900 text-center">위와 같이 안전작업 허가서를 제출하며, 현장 안전 수칙을 준수할 것을 서약합니다.</p>
+                <p className="text-[10px] font-bold text-gray-900 text-center">위와 같이 안전작업 허가서를 제출하며, 안전 수칙을 준수할 것을 서약합니다.</p>
                 <div className="flex items-center gap-8">
                   <div className="text-center">
                     <p className="text-[8px] font-bold text-gray-400 mb-1">작업자 확인</p>
@@ -544,8 +544,8 @@ export default function VisitorFormPage() {
                 <p>안전작업 허가서 시스템은 원활한 작업 안전 관리를 위해 아래와 같이 개인정보를 수집합니다.</p>
                 <div className="bg-gray-50 p-4 rounded-lg space-y-2">
                   <p><strong>1. 수집 항목:</strong> 성함, 연락처, 소속, 작업 종류 등 작성 항목 일체</p>
-                  <p><strong>2. 수집 목적:</strong> 현장 안전 관리, 작업자 확인, 비상 시 연락</p>
-                  <p><strong>3. 보유 기간:</strong> 수집일로부터 1년 또는 현장 규정 완료 시까지</p>
+                  <p><strong>2. 수집 목적:</strong> 안전 관리, 작업자 확인, 비상 시 연락</p>
+                  <p><strong>3. 보유 기간:</strong> 수집일로부터 1년 또는 규정 완료 시까지</p>
                 </div>
               </div>
               <div className="p-6 bg-gray-50 flex gap-3">

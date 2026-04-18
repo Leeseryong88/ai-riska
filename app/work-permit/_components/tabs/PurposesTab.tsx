@@ -216,7 +216,7 @@ export const PurposesTab: React.FC = () => {
         '화학 반응에 의한 유해가스 발생'
       ],
       safetyPrecautions: [
-        '해당 물질의 MSDS 숙지 및 현장 비치',
+        '해당 물질의 MSDS 숙지 및 비치',
         '물질 특성에 맞는 보호구(방독마스크, 내화학장갑 등) 착용',
         '누출 방지 턱(Dike) 설치 및 비상 세척 시설 확보',
         '화기 엄금 및 정전기 방지 조치'
@@ -492,7 +492,7 @@ export const PurposesTab: React.FC = () => {
               </div>
               <div>
                 <h3 className="font-bold text-gray-900">새 양식 직접 만들기</h3>
-                <p className="text-sm text-gray-500 mt-1">우리 현장에 꼭 맞는<br />독자적인 허가서 양식을 구성합니다.</p>
+                <p className="text-sm text-gray-500 mt-1">우리 사업장에 꼭 맞는<br />독자적인 허가서 양식을 구성합니다.</p>
               </div>
             </button>
           </>

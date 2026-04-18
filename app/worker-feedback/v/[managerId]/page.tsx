@@ -153,7 +153,7 @@ export default function WorkerFeedbackPublicPage() {
                   </div>
                   <div>
                     <Label htmlFor="wf-dept" className="text-gray-700">
-                      소속·현장 (선택)
+                      소속 (선택)
                     </Label>
                     <Input
                       id="wf-dept"

@@ -139,7 +139,7 @@ export const LogForm: React.FC<LogFormProps> = ({ initialData, onSubmit, onCance
           <Label>일지 제목</Label>
           <Input
             type="text"
-            placeholder="예: 00현장 주간 안전점검 일지"
+            placeholder="예: OO 주간 안전점검 일지"
             value={formData.title}
             onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
             required
@@ -262,11 +262,11 @@ export const LogForm: React.FC<LogFormProps> = ({ initialData, onSubmit, onCance
       </section>
 
       <section className="space-y-4">
-        <Label>현장 사진 <span className="text-[10px] text-gray-400 font-normal">(선택)</span></Label>
+        <Label>사진 <span className="text-[10px] text-gray-400 font-normal">(선택)</span></Label>
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
           {formData.photos?.map((photo, index) => (
             <div key={index} className="relative aspect-square rounded-xl overflow-hidden border border-gray-100 group">
-              <img src={photo} alt={`현장사진 ${index + 1}`} className="w-full h-full object-cover" />
+              <img src={photo} alt={`사진 ${index + 1}`} className="w-full h-full object-cover" />
               <button
                 type="button"
                 onClick={() => removePhoto(index)}

@@ -79,7 +79,7 @@ export default function SafetyManagementFeePage() {
     stage: 'early', // 공사 단계
     workerCount: '20', // 일평균 근로자 수
     hasTechGuidance: 'no', // 기술지도 계약 여부 (기본 해당없음)
-    hasHeadquarters: 'no', // 본사 유무 (기본 개인/현장단독)
+    hasHeadquarters: 'no', // 본사 유무 (기본 개인/단독)
     includeEvents: 'no', // 안전보건 행사 포함 여부 (기본 미실시)
     includeDiagnosis: 'no', // 안전진단 포함 여부 (기본 미실시)
     includeHealthCheckup: 'no', // 건강검진 실시 여부 (기본 미실시)
@@ -170,7 +170,7 @@ export default function SafetyManagementFeePage() {
         return [
           { detail: '이동식 비계(BT아시바) 안전난간', unit: '조', count: Math.floor(amount * 0.5 / 150000) || 1, unitPrice: 150000, spec: '고소작업 시 추락 방지용 난간' },
           { detail: '작업발판 및 안전사다리', unit: '개', count: Math.floor(amount * 0.3 / 80000) || 1, unitPrice: 80000, spec: '실내 고소작업 안전통로 확보' },
-          { detail: '소화기 및 화재예방 설비', unit: '식', count: 1, unitPrice: amount - ((Math.floor(amount * 0.5 / 150000) || 1) * 150000) - ((Math.floor(amount * 0.3 / 80000) || 1) * 80000), spec: '인테리어 현장 화재 감시용' }
+          { detail: '소화기 및 화재예방 설비', unit: '식', count: 1, unitPrice: amount - ((Math.floor(amount * 0.5 / 150000) || 1) * 150000) - ((Math.floor(amount * 0.3 / 80000) || 1) * 80000), spec: '인테리어 화재 감시용' }
         ];
       }
       if (lowerDesc.includes('도로') || lowerDesc.includes('관로') || lowerDesc.includes('토목') || lowerDesc.includes('포장')) {
@@ -188,7 +188,7 @@ export default function SafetyManagementFeePage() {
         ];
       }
       return [
-        { detail: '안전난간대 및 추락방지 시설', unit: 'm', count: Math.floor(amount * 0.6 / 25000) || 1, unitPrice: 25000, spec: '현장 개구부 및 단부 추락방지' },
+        { detail: '안전난간대 및 추락방지 시설', unit: 'm', count: Math.floor(amount * 0.6 / 25000) || 1, unitPrice: 25000, spec: '개구부 및 단부 추락방지' },
         { detail: '수직보호망 및 낙하물방지', unit: '식', count: 1, unitPrice: amount - ((Math.floor(amount * 0.6 / 25000) || 1) * 25000), spec: '낙하물 비산 방지 조치' }
       ];
     };
@@ -281,7 +281,7 @@ export default function SafetyManagementFeePage() {
   const loadingMessages = [
     { title: "데이터를 분석하고 있습니다...", desc: "입력하신 정보를 체계적으로 검토 중입니다." },
     { title: "비용 계획을 수립 중입니다...", desc: "산업안전보건법 요율을 바탕으로 예시 항목을 구성하고 있습니다." },
-    { title: "세부 명세를 생성 중입니다...", desc: "현장 상황에 맞는 합리적인 사용 계획을 도출하고 있습니다." },
+    { title: "세부 명세를 생성 중입니다...", desc: "상황에 맞는 합리적인 사용 계획을 도출하고 있습니다." },
     { title: "최종 계획서를 정리 중입니다...", desc: "법정 서식에 맞춰 문서를 마무리하고 있습니다." }
   ];
 
@@ -405,7 +405,7 @@ export default function SafetyManagementFeePage() {
                   </tr>
                   <tr>
                     <th style={{ border: '1px solid #000', padding: '10px', background: '#f3f4f6', textAlign: 'center' }}>공정개요</th>
-                    <td colSpan={5} style={{ border: '1px solid #000', padding: '10px', fontSize: '10pt', color: '#374151' }}>{formData.constructionDescription || '해당 현장의 공사 공정 및 내용에 따라 계획이 수립되었습니다.'}</td>
+                    <td colSpan={5} style={{ border: '1px solid #000', padding: '10px', fontSize: '10pt', color: '#374151' }}>{formData.constructionDescription || '해당 사업장의 공정 및 내용에 따라 계획이 수립되었습니다.'}</td>
                   </tr>
                   <tr>
                     <th rowSpan={4} style={{ border: '1px solid #000', padding: '10px', background: '#f3f4f6', textAlign: 'center' }}>공사종류</th>
@@ -572,7 +572,7 @@ export default function SafetyManagementFeePage() {
                     type="text"
                     value={saveTitle}
                     onChange={(e) => setSaveTitle(e.target.value)}
-                    placeholder="예: OO현장 관리비 계획서"
+                    placeholder="예: OO관리비 계획서"
                     className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-amber-500 focus:bg-white outline-none transition-all font-bold text-gray-900"
                     autoFocus
                   />
@@ -604,7 +604,7 @@ export default function SafetyManagementFeePage() {
     <WorkspaceShell
       serviceHref="/safety-management-fee"
       title="안전보건관리비 계획서"
-      description="AI 기술로 현장의 안전보건관리비 계획을 자동 산출하고 체계적인 문서로 만들어줍니다."
+      description="AI 기술로 안전보건관리비 계획을 자동 산출하고 체계적인 문서로 만들어줍니다."
     >
       <div className="mx-auto max-w-2xl px-4 py-8">
         {!isGenerating ? (
@@ -622,7 +622,7 @@ export default function SafetyManagementFeePage() {
                 <div className="bg-blue-50 border border-blue-100 rounded-xl p-6 mb-8 text-blue-900 leading-relaxed text-sm md:text-base">
                   <p className="mb-4 font-bold text-lg">👷 본 서비스는 예시 작성을 보조합니다</p>
                   <p className="mb-3">입력하신 최소한의 정보를 바탕으로 산업안전보건법에 따른 <strong>합리적인 사용계획서 예시</strong>를 자동으로 구성해드립니다.</p>
-                  <p className="mb-3">생성된 내용은 참고용이며, 실제 현장 상황과 시공 계획에 맞춰 반드시 수정 및 보완하여 사용하시기 바랍니다.</p>
+                  <p className="mb-3">생성된 내용은 참고용이며, 실제 상황과 시공 계획에 맞춰 반드시 수정 및 보완하여 사용하시기 바랍니다.</p>
                 </div>
                 <button onClick={() => setSubStep('mode')} className="w-full py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg transition-all text-lg">시작하기</button>
               </div>
@@ -679,7 +679,7 @@ export default function SafetyManagementFeePage() {
                     <input 
                       type="text" 
                       className="w-full p-4 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="예: 00지구 신축공사 현장"
+                      placeholder="예: 00지구 신축공사"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     />
@@ -749,7 +749,7 @@ export default function SafetyManagementFeePage() {
 
             {subStep === 'priority' && (
               <div className="space-y-8">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">합리적 배분을 위한 현장 상황 확인</h2>
+                <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">합리적 배분을 위한 상황 확인</h2>
                 
                 <div className="space-y-6">
                   {/* 공사 기간 관련 */}
@@ -857,7 +857,7 @@ export default function SafetyManagementFeePage() {
                       <div className={`w-2 h-2 rounded-full ${priorities.hasTechGuidance === 'yes' ? 'bg-green-500' : 'bg-gray-300'}`}></div>
                       <span className="text-[11px] font-bold text-gray-500">
                         {priorities.hasSafetyManager === 'yes' 
-                          ? '안전관리자 선임 현장으로 기술지도 면제 대상입니다.' 
+                          ? '안전관리자 선임 사업장으로 기술지도 면제 대상입니다.' 
                           : '공사금액 1억 이상 120억 미만(토목 150억 미만)은 기술지도 대상입니다.'}
                       </span>
                     </div>

@@ -110,7 +110,7 @@ function ClientSideCamera() {
 
       const formData = new FormData();
       formData.append('image', processedFile);
-      formData.append('processName', '현장 사진');
+      formData.append('processName', '사진');
 
       const response = await fetch('/api/analyze', {
         method: 'POST',
@@ -354,7 +354,7 @@ function ClientSideCamera() {
     }
   };
 
-  const convertToRiskAssessmentData = (analysis: Analysis, processName: string = '현장 작업'): RiskAssessmentData[] => {
+  const convertToRiskAssessmentData = (analysis: Analysis, processName: string = '작업'): RiskAssessmentData[] => {
     const result: RiskAssessmentData[] = [];
     if (!analysis.risk_factors || analysis.risk_factors.length === 0) {
       return result;
@@ -544,7 +544,7 @@ function ClientSideCamera() {
     <WorkspaceShell
       serviceHref="/camera"
       title="실시간 사진 위험 분석"
-      description="현장 사진을 즉시 분석하여 위험요인을 찾습니다."
+      description="사진을 즉시 분석하여 위험요인을 찾습니다."
     >
       <div className="selection:bg-blue-100 selection:text-blue-700">
         <div className="w-full min-w-0">
@@ -653,7 +653,7 @@ function ClientSideCamera() {
                             <svg className="w-16 h-16 md:w-24 md:h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                           </div>
                           <p className="text-gray-400 font-black text-xl md:text-2xl tracking-tight mb-4 text-center">분석할 사진을 업로드해 주세요</p>
-                          <p className="text-gray-400/60 text-sm md:text-base font-medium text-center max-w-[280px]">현장의 위험 요소를 AI가 즉시 감지하여 안전 수칙을 제안합니다</p>
+                          <p className="text-gray-400/60 text-sm md:text-base font-medium text-center max-w-[280px]">위험 요소를 AI가 즉시 감지하여 안전 수칙을 제안합니다</p>
                         </div>
                       )}
                     </div>
@@ -697,7 +697,7 @@ function ClientSideCamera() {
               type="text"
               value={saveTitle}
               onChange={(e) => setSaveTitle(e.target.value)}
-              placeholder="예: OO현장 1층 작업구역 분석"
+              placeholder="예: OO 1층 작업구역 분석"
               className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-amber-500 focus:bg-white outline-none transition-all font-bold text-gray-900"
               autoFocus
             />

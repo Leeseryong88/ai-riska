@@ -30,7 +30,7 @@ export const OPTIONAL_DOC_META: Record<
   },
   equipmentInspection: {
     title: '장비 검사필증',
-    hint: '지게차, 크레인 등 현장 투입 장비',
+    hint: '지게차, 크레인 등 투입 장비',
   },
 };
 

@@ -15,11 +15,11 @@ const QUESTIONS = [
     id: 'q1_name', 
     text: '공사 명칭을 입력해주세요.', 
     placeholder: '예: 00지구 아파트 신축공사',
-    defaultValue: '00지구 신축공사 현장'
+    defaultValue: '00지구 신축공사'
   },
   { 
     id: 'q1_address', 
-    text: '공사 현장의 위치(주소)를 입력해주세요.', 
+    text: '사업장 위치(주소)를 입력해주세요.', 
     placeholder: '예: 서울시 00구 00동 123-4',
     defaultValue: '서울특별시 강남구 테헤란로 123'
   },
@@ -39,17 +39,17 @@ const QUESTIONS = [
   },
   { 
     id: 'q4', 
-    text: '시공사 상호와 현장 관리 조직 인적사항을 입력해주세요.', 
+    text: '시공사 상호와 관리 조직 인적사항을 입력해주세요.', 
     type: 'org-structure',
-    defaultValue: '시공사: (주)안전건설, 조직: 현장소장: 홍길동 (010-1234-5678)'
+    defaultValue: '시공사: (주)안전건설, 조직: 소장: 홍길동 (010-1234-5678)'
   },
   // 2. 안전보건 관리체계
   { 
     id: 'q5', 
     text: '안전보건 관리 조직 구성(안전관리자, 보건관리자 등)의 구체적인 역할 분담을 입력해주세요.', 
-    placeholder: '예: 소장 총괄, 안전관리자 현장 순찰, 보건관리자 건강검진 관리 등',
+    placeholder: '예: 소장 총괄, 안전관리자 순찰, 보건관리자 건강검진 관리 등',
     options: ['안전/보건 전담자 배치', '소장 직접 관리체계', '외부 전문기관 위탁관리'],
-    defaultValue: '현장소장 총괄 관리 및 안전관리자 상주 점검, 각 공종별 관리감독자 지정'
+    defaultValue: '소장 총괄 관리 및 안전관리자 상주 점검, 각 공종별 관리감독자 지정'
   },
   { 
     id: 'q6', 
@@ -61,7 +61,7 @@ const QUESTIONS = [
   // 3. 방침 및 목표
   { 
     id: 'q7', 
-    text: '현장의 안전보건 경영방침과 올해의 구체적인 목표는 무엇인가요?', 
+    text: '안전보건 경영방침과 올해의 구체적인 목표는 무엇인가요?', 
     placeholder: '예: 중대재해 ZERO / 무재해 365일 달성, 위험요인 100% 제거',
     options: ['중대재해 ZERO', '안전수칙 100% 준수', '자율 안전문화 정착'],
     defaultValue: '중대재해 ZERO 및 안전보건관리체계 정착, 일일 안전점검 100% 실시'
@@ -76,25 +76,25 @@ const QUESTIONS = [
   },
   { 
     id: 'q9', 
-    text: '현장 자체 점검(일일, 주간, 월간) 계획을 입력해주세요.', 
+    text: '자체 점검(일일, 주간, 월간) 계획을 입력해주세요.', 
     placeholder: '예: 일일 소장 점검, 주간 합동 점검, 월간 경영층 점검',
     options: ['일일 작업 전 점검', '주간 노사 합동점검', '월간 정밀 안전점검'],
-    defaultValue: '일일 현장소장 순찰, 주간 협력업체 합동 점검, 월간 정밀 안전 진단'
+    defaultValue: '일일 소장 순찰, 주간 협력업체 합동 점검, 월간 정밀 안전 진단'
   },
   // 5. 비상대응 및 건강관리
   { 
     id: 'q10', 
     text: '비상 시 신속한 대응을 위한 비상연락망과 인근 지정병원 정보가 있나요?', 
-    placeholder: '예: 00병원(현장 5km), 비상연락망 구축 완료',
-    options: ['인근 응급센터 협약', '현장 비상구급함 비치', '정기 비상대응 훈련'],
-    defaultValue: '인근 00종합병원 비상연락망 구축 및 비상 대응 매뉴얼 현장 비치'
+    placeholder: '예: 00병원(5km 이내), 비상연락망 구축 완료',
+    options: ['인근 응급센터 협약', '비상구급함 비치', '정기 비상대응 훈련'],
+    defaultValue: '인근 00종합병원 비상연락망 구축 및 비상 대응 매뉴얼 비치'
   },
   { 
     id: 'q11', 
     text: '근로자 건강관리(검진, 휴게시설, 폭염/한파 대책)는 어떻게 하시나요?', 
     placeholder: '예: 냉온수기 비치, 휴게실 에어컨 설치, 정기 건강검진 실시',
     options: ['사내 휴게시설 운영', '온열질환 예방활동', '정기 건강진단'],
-    defaultValue: '현장 휴게소(에어컨 비치) 운영, 폭염 시 휴게시간 보장, 정기 건강검진 실시'
+    defaultValue: '휴게소(에어컨 비치) 운영, 폭염 시 휴게시간 보장, 정기 건강검진 실시'
   },
   // 6. 협력업체 관리
   { 
@@ -145,7 +145,7 @@ export default function HealthSafetyPlanPage() {
   }>({
     company: '',
     members: [
-      { role: '현장소장', name: '', contact: '', selected: true },
+      { role: '소장', name: '', contact: '', selected: true },
       { role: '안전관리자', name: '', contact: '', selected: false },
       { role: '보건관리자', name: '', contact: '', selected: false },
       { role: '관리감독자', name: '', contact: '', selected: false },
@@ -156,7 +156,7 @@ export default function HealthSafetyPlanPage() {
   const loadingMessages = [
     { title: "데이터를 분석하고 있습니다...", desc: "입력하신 정보를 체계적으로 검토 중입니다." },
     { title: "계획서 초안을 작성 중입니다...", desc: "산업안전보건법령을 준수하여 내용을 구성하고 있습니다." },
-    { title: "안전 수칙을 검토 중입니다...", desc: "현장 맞춤형 위험 방지 대책을 수립하고 있습니다." },
+    { title: "안전 수칙을 검토 중입니다...", desc: "맞춤형 위험 방지 대책을 수립하고 있습니다." },
     { title: "최종 문서를 정리 중입니다...", desc: "표준 양식에 맞춰 계획서를 마무리하고 있습니다." }
   ];
 
@@ -391,7 +391,7 @@ export default function HealthSafetyPlanPage() {
       <WorkspaceShell
         serviceHref="/health-safety-plan"
         title="안전보건계획서"
-        description="현장 입력값을 바탕으로 계획서를 생성하고 결과를 직접 편집할 수 있습니다."
+        description="입력값을 바탕으로 계획서를 생성하고 결과를 직접 편집할 수 있습니다."
         contentClassName="pb-20"
       >
         <div className="mx-auto max-w-4xl px-4 pt-10">
@@ -458,7 +458,7 @@ export default function HealthSafetyPlanPage() {
                     type="text"
                     value={saveTitle}
                     onChange={(e) => setSaveTitle(e.target.value)}
-                    placeholder="예: OO현장 안전보건계획서"
+                    placeholder="예: OO안전보건계획서"
                     className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-amber-500 focus:bg-white outline-none transition-all font-bold text-gray-900"
                     autoFocus
                   />
@@ -500,7 +500,7 @@ export default function HealthSafetyPlanPage() {
     <WorkspaceShell
       serviceHref="/health-safety-plan"
       title="안전보건계획서"
-      description="AI 기술을 활용하여 현장 맞춤형 안전보건계획서를 빠르고 정확하게 생성하고 관리합니다."
+      description="AI 기술을 활용하여 맞춤형 안전보건계획서를 빠르고 정확하게 생성하고 관리합니다."
     >
       <div className="mx-auto max-w-2xl px-4 py-8 text-center">
         {!isGenerating ? (
@@ -522,13 +522,13 @@ export default function HealthSafetyPlanPage() {
                     본 서비스는 인공지능(AI) 기술을 활용하여 <strong>안전보건관리계획서 작성을 보조하는 참고 자료</strong>를 생성하는 도구입니다. 
                   </p>
                   <p className="mb-3">
-                    AI가 생성한 결과물은 사용자가 입력한 데이터를 바탕으로 한 일반적인 가이드라인이며, <strong>현장의 실제 상황이나 법적 요구사항을 완벽하게 반영하지 못할 수 있습니다.</strong>
+                    AI가 생성한 결과물은 사용자가 입력한 데이터를 바탕으로 한 일반적인 가이드라인이며, <strong>실제 상황이나 법적 요구사항을 완벽하게 반영하지 못할 수 있습니다.</strong>
                   </p>
                   <p className="mb-3">
                     따라서, 본 서비스로 생성된 결과물을 실제 업무에 활용하거나 외부 기관에 제출함에 있어 발생하는 <strong>모든 책임은 사용자 본인에게 있음</strong>을 알려드립니다.
                   </p>
                   <p className="font-semibold text-amber-700">
-                    반드시 전문가의 검토를 거쳐 실제 현장 상황에 맞게 수정 및 보완하여 사용하시기 바랍니다.
+                    반드시 전문가의 검토를 거쳐 실제 상황에 맞게 수정 및 보완하여 사용하시기 바랍니다.
                   </p>
                 </div>
 
@@ -576,7 +576,7 @@ export default function HealthSafetyPlanPage() {
                     </div>
                     
                     <div className="space-y-4">
-                      <label className="block text-sm font-bold text-gray-700">현장 관리 조직 (선택 및 입력)</label>
+                      <label className="block text-sm font-bold text-gray-700">관리 조직 (선택 및 입력)</label>
                       {orgData.members.map((member, idx) => (
                         <div key={idx} className="p-4 border border-gray-100 rounded-xl bg-gray-50 space-y-3">
                           <label className="flex items-center gap-3 cursor-pointer">

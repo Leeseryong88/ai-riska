@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ReactNode, Suspense, useState } from 'react';
+import { ReactNode, Suspense, useEffect, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import {
   getRelatedServices,
@@ -13,6 +13,9 @@ import {
 import ServiceGlyph from '@/components/navigation/ServiceGlyph';
 import TopBar from '@/app/components/TopBar';
 import ContactModal from '@/app/components/ContactModal';
+import { useAuth } from '@/app/context/AuthContext';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '@/app/lib/firebase';
 
 interface WorkspaceShellProps {
   serviceHref?: string;
@@ -25,9 +28,11 @@ interface WorkspaceShellProps {
 function ShellServiceLinks({
   filterIds,
   serviceHref,
+  counts = {},
 }: {
   filterIds: string[];
   serviceHref?: string;
+  counts?: Record<string, number>;
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -41,6 +46,7 @@ function ShellServiceLinks({
           const isActive =
             isServiceActive(service, pathname, search) ||
             (!!serviceHref && service.href === serviceHref);
+          const count = counts[service.id];
           return (
             <Link
               key={service.id}
@@ -53,6 +59,11 @@ function ShellServiceLinks({
             >
               <ServiceGlyph icon={service.icon} className="h-4 w-4" />
               <span className="flex-1 truncate">{service.shortTitle}</span>
+              {count > 0 && (
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-black text-white shadow-sm shadow-red-200">
+                  {count > 99 ? '99+' : count}
+                </span>
+              )}
             </Link>
           );
         })}
@@ -99,9 +110,49 @@ export default function WorkspaceShell({
   children,
   contentClassName = '',
 }: WorkspaceShellProps) {
+  const { user } = useAuth();
   const currentService = getServiceByHref(serviceHref);
   const currentCategory = currentService ? serviceCategories[currentService.category] : undefined;
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [unreadFeedbackCount, setUnreadFeedbackCount] = useState(0);
+  const [unsignedPermitCount, setUnsignedPermitCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+
+    // Fetch unread feedback count
+    const feedbackQuery = query(
+      collection(db, 'worker_feedback_submissions'),
+      where('managerId', '==', user.uid)
+    );
+
+    const unsubscribeFeedback = onSnapshot(feedbackQuery, (snapshot) => {
+      const unreadCount = snapshot.docs.filter(doc => !doc.data().acknowledged).length;
+      setUnreadFeedbackCount(unreadCount);
+    });
+
+    // Fetch unsigned work permit count
+    const permitQuery = query(
+      collection(db, 'logs'),
+      where('ownerId', '==', user.uid)
+    );
+
+    const unsubscribePermits = onSnapshot(permitQuery, (snapshot) => {
+      // Filter unsigned permits client-side because adminSignature field might be missing
+      const unsignedCount = snapshot.docs.filter(doc => !doc.data().adminSignature).length;
+      setUnsignedPermitCount(unsignedCount);
+    });
+
+    return () => {
+      unsubscribeFeedback();
+      unsubscribePermits();
+    };
+  }, [user]);
+
+  const sidebarCounts = {
+    'worker-feedback': unreadFeedbackCount,
+    'work-permit': unsignedPermitCount,
+  };
 
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-900">
@@ -160,6 +211,7 @@ export default function WorkspaceShell({
                     'worker-feedback',
                   ]}
                   serviceHref={serviceHref}
+                  counts={sidebarCounts}
                 />
               </Suspense>
 

@@ -133,7 +133,7 @@ export function WorkerFeedbackSubmissionPreview({
                   />
                 </div>
                 <div>
-                  <span className="block text-sm font-medium text-gray-700">소속·현장 (선택)</span>
+                  <span className="block text-sm font-medium text-gray-700">소속 (선택)</span>
                   <Input
                     id="wf-preview-dept"
                     disabled

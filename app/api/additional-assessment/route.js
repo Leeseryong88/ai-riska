@@ -217,7 +217,7 @@ export async function POST(request) {
     }
     
     // 프롬프트 생성 (이미지 포함)
-    const promptText = `당신은 산업 안전 전문가입니다. ${processName ? `분석 대상은 "${processName}"입니다.` : ""} 다음은 작업 현장의 이미지와 현재까지 다음 위험 요소들입니다:
+    const promptText = `당신은 산업 안전 전문가입니다. ${processName ? `분석 대상은 "${processName}"입니다.` : ""} 다음은 작업 환경의 이미지와 현재까지 다음 위험 요소들입니다:
 
 현재까지 식별된 위험 요소:
 ${factorsText}

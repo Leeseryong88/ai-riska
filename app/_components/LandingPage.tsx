@@ -20,21 +20,21 @@ import Link from 'next/link';
 const features = [
   {
     title: "스마트 위험성 평가",
-    description: "사진 촬영이나 텍스트 입력만으로 현장의 위험 요인을 AI가 즉시 분석하여 상세한 평가표를 생성합니다.",
+    description: "사진 촬영이나 텍스트 입력만으로 위험 요인을 AI가 즉시 분석하여 상세한 평가표를 생성합니다.",
     icon: <FileSpreadsheet className="w-8 h-8 text-blue-600" />,
     color: "bg-blue-50",
     href: "/assessment"
   },
   {
     title: "AI 안전보건계획서",
-    description: "현장 정보를 바탕으로 법적 기준에 부합하는 맞춤형 계획서 초안을 단 10초 만에 완성합니다.",
+    description: "정보를 바탕으로 법적 기준에 부합하는 맞춤형 계획서 초안을 단 10초 만에 완성합니다.",
     icon: <FileText className="w-8 h-8 text-emerald-600" />,
     color: "bg-emerald-50",
     href: "/health-safety-plan"
   },
   {
     title: "실시간 사진 위험 분석",
-    description: "현장 사진을 업로드하면 위험 요인을 실시간 감지하고 공학적/관리적 개선 대책을 제안합니다.",
+    description: "사진을 업로드하면 위험 요인을 실시간 감지하고 공학적/관리적 개선 대책을 제안합니다.",
     icon: <Camera className="w-8 h-8 text-amber-600" />,
     color: "bg-amber-50",
     href: "/camera"
@@ -116,14 +116,14 @@ export default function LandingPage() {
           >
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 text-blue-600 text-sm font-black mb-8 border border-blue-100">
               <Zap className="w-4 h-4 fill-current" />
-              <span>현장 안전 관리의 새로운 표준</span>
+              <span>안전 관리의 새로운 표준</span>
             </div>
             <h1 className="text-5xl lg:text-7xl font-black text-gray-900 leading-[1.1] mb-8 tracking-tight">
               복잡한 안전 서류,<br />
               <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent italic">AI Riska</span>가 단 몇 초 만에
             </h1>
             <p className="text-xl text-gray-600 mb-12 leading-relaxed max-w-2xl mx-auto font-medium">
-              인공지능으로 현장의 위험 요인을 분석하고,<br />
+              인공지능으로 위험 요인을 분석하고,<br />
               법적 기준에 완벽하게 부합하는 서류를 자동 생성하세요.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -167,7 +167,7 @@ export default function LandingPage() {
             transition={{ duration: 0.6 }}
             className="text-center mb-20"
           >
-            <h2 className="text-4xl font-black text-gray-900 mb-4">현장의 모든 안전 관리를 하나로</h2>
+            <h2 className="text-4xl font-black text-gray-900 mb-4">모든 안전 관리를 하나로</h2>
             <p className="text-xl text-gray-600 font-medium">네 가지 핵심 엔진이 안전 관리를 스마트하게 혁신합니다.</p>
           </motion.div>
 
@@ -213,7 +213,7 @@ export default function LandingPage() {
               </h2>
               <div className="space-y-8">
                 {[
-                  { title: "최신 AI 모델 기반", desc: "현장 이미지를 실시간으로 분석하여 고도화된 위험 요소를 추출합니다." },
+                  { title: "최신 AI 모델 기반", desc: "이미지를 실시간으로 분석하여 고도화된 위험 요소를 추출합니다." },
                   { title: "법적 리스크 제로", desc: "산업안전보건법 및 건설안전 지침을 완벽하게 준수하는 서류를 보장합니다." },
                   { title: "압도적인 효율성", desc: "기존 몇 시간이 소요되던 문서 업무를 단 몇 초의 데이터 입력으로 단축합니다." },
                   { title: "저장 및 사후 관리", desc: "생성된 모든 결과물은 클라우드에 자동 보관되어 언제든 수정 및 인쇄가 가능합니다." }
@@ -267,7 +267,7 @@ export default function LandingPage() {
             
             <div className="relative z-10 max-w-2xl mx-auto">
               <h2 className="text-4xl lg:text-5xl font-black text-white mb-8 leading-tight">
-                지금 바로 현장 안전을<br />스마트하게 바꾸세요
+                지금 바로 안전 관리를<br />스마트하게 바꾸세요
               </h2>
               <p className="text-blue-100 text-lg font-bold mb-12">
                 무료 가입으로 AI Riska의 모든 기능을 지금 바로 경험해보세요.

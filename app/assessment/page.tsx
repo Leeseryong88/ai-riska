@@ -44,23 +44,23 @@ interface SavedAssessment {
 const workTypeExamples: Record<string, { general: string; process: string }> = {
   // 건설업
   '토공사': { 
-    general: '대규모 터파기 작업이 진행 중인 건설 현장이며, 굴착기 및 덤프트럭 등 중장비 이동이 빈번합니다.', 
+    general: '대규모 터파기 작업이 진행 중인 건설 사업장이며, 굴착기 및 덤프트럭 등 중장비 이동이 빈번합니다.', 
     process: '굴착 사면 인근에서 작업 중 지반 붕괴로 인한 매몰 위험 또는 장비 선회 반경 내 근로자 협착...' 
   },
   '골조공사': { 
-    general: '철근 배근 및 거푸집 설치 작업이 진행되는 고층 빌딩 현장으로, 타워크레인 양중 작업이 포함됩니다.', 
+    general: '철근 배근 및 거푸집 설치 작업이 진행되는 고층 빌딩 사업장으로, 타워크레인 양중 작업이 포함됩니다.', 
     process: '외부 비계 상부에서 거푸집 조립 중 안전대 미체결 상태에서 중심을 잃고 추락하는 사고...' 
   },
   '마감공사': { 
-    general: '내부 인테리어 및 조적, 미장 작업이 진행되는 아파트 현장이며, 다양한 공종이 혼재되어 있습니다.', 
+    general: '내부 인테리어 및 조적, 미장 작업이 진행되는 아파트 사업장이며, 다양한 공종이 혼재되어 있습니다.', 
     process: '실내 천장 마감 작업 중 이동식 비계(우마) 위에서 이동하다 바닥 요철에 걸려 넘어짐...' 
   },
   '전기/설비공사': { 
-    general: '건물 내 배관 설치 및 배선 작업 현장이며, 사다리 작업과 전기 판넬 작업이 위주입니다.', 
+    general: '건물 내 배관 설치 및 배선 작업 사업장이며, 사다리 작업과 전기 판넬 작업이 위주입니다.', 
     process: '천장 내 케이블 트레이 설치 중 사다리 최상단에 올라가 작업하다 사다리가 전도되어 추락...' 
   },
   '도장공사': { 
-    general: '아파트 외벽 및 내부 도장 작업 현장이며, 달비계 작업과 유기용제 사용이 포함됩니다.', 
+    general: '아파트 외벽 및 내부 도장 작업 사업장이며, 달비계 작업과 유기용제 사용이 포함됩니다.', 
     process: '실내 도장 작업 중 환기 설비 미흡으로 인한 유기용제 증기 질식 또는 화재 발생 위험...' 
   },
   // 제조업
@@ -73,7 +73,7 @@ const workTypeExamples: Record<string, { general: string; process: string }> = {
     process: '컨베이어 벨트 구동부의 방호덮개가 열린 상태에서 정비 작업 중 손이 끼이는 위험...' 
   },
   '용접작업': { 
-    general: '선박 블록 용접 현장이며, 아크 용접과 가스 절단 작업이 주된 공정입니다.', 
+    general: '선박 블록 용접 사업장이며, 아크 용접과 가스 절단 작업이 주된 공정입니다.', 
     process: '용접 불티가 주변 가연물에 튀어 발생하는 화재 또는 밀폐공간 내 용접 흄 중독...' 
   },
   '포장/물류': { 
@@ -114,9 +114,9 @@ const workTypeExamples: Record<string, { general: string; process: string }> = {
     general: '서버실 관리 및 전산 장비 유지보수 작업이며, 정전기 예방 및 중량물 이동이 있습니다.', 
     process: '서버 랙(Rack) 이동 중 발등 위에 서버가 낙하하여 발생하는 골절 사고...' 
   },
-  '현장관리': { 
-    general: '시공 현장 감독 및 안전 점검 업무이며, 현장 전체를 순회하며 확인합니다.', 
-    process: '현장 순찰 중 개구부 덮개가 불완전하게 닫힌 구간을 밟아 추락하는 위험...' 
+  '안전 관리': { 
+    general: '사업장 감독 및 안전 점검 업무이며, 전체를 순회하며 확인합니다.', 
+    process: '순찰 중 개구부 덮개가 불완전하게 닫힌 구간을 밟아 추락하는 위험...' 
   },
   // 운수/창고업
   '상하차': { 
@@ -132,11 +132,11 @@ const workTypeExamples: Record<string, { general: string; process: string }> = {
     process: '적재물 결속 상태를 확인하기 위해 적재함 위에 올라갔다 뛰어내리며 발생하는 무릎 부상...' 
   },
   '장비운용': { 
-    general: '크레인, 지게차 등 하역 장비 운용 현장이며, 장비 결함 확인 및 신호수 배치가 필요합니다.', 
+    general: '크레인, 지게차 등 하역 장비 운용 사업장이며, 장비 결함 확인 및 신호수 배치가 필요합니다.', 
     process: '지게차 포크 위에 사람을 태우고 고소 작업을 하던 중 균형 상실로 인한 추락...' 
   },
   '기타': { 
-    general: '현장의 기본적인 상황과 안전 수칙을 입력해주세요. (예: 환기 상태, 보호구 착용 여부 등)', 
+    general: '기본적인 상황과 안전 수칙을 입력해주세요. (예: 환기 상태, 보호구 착용 여부 등)', 
     process: '작업 중 발생할 수 있는 구체적인 위험 상황을 설명해주세요. (예: 사다리 작업 중 추락, 기계 끼임 등)' 
   }
 };
@@ -527,7 +527,6 @@ function ClientSideContent() {
     
     // 각종 상태 초기화
     setIsGeneratingFinal(false);
-    setIsGeneratingPdf(false);
     setIsRequestingAdditional(false);
     setAdditionalAnalysisIndex(null);
     
@@ -1349,7 +1348,7 @@ function ClientSideContent() {
                 <div className="bg-white rounded-xl md:rounded-[2.5rem] shadow-md md:shadow-[0_40px_80px_-15px_rgba(0,0,0,0.05)] overflow-hidden mb-8 md:mb-16 border border-gray-50 p-6 md:p-16 text-center">
                   {isSelectingSiteType ? (
                     <div className="max-w-4xl mx-auto">
-                      <h2 className="text-xl md:text-3xl font-black text-gray-900 mb-6 md:mb-8">현장의 종류를 선택해주세요</h2>
+                      <h2 className="text-xl md:text-3xl font-black text-gray-900 mb-6 md:mb-8">사업장의 종류를 선택해주세요</h2>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
                         {['건설업', '제조업', '서비스업', '사무직', '운수/창고업', '기타'].map((type) => (
                           <button
@@ -1385,7 +1384,7 @@ function ClientSideContent() {
                         {(siteType === '건설업' ? ['토공사', '골조공사', '마감공사', '전기/설비공사', '도장공사', '기타'] :
                           siteType === '제조업' ? ['금속가공', '조립라인', '용접작업', '포장/물류', '기계정비', '기타'] :
                           siteType === '서비스업' ? ['시설관리', '청소/방역', '조리/식당', '판매/영업', '배송/배달', '기타'] :
-                          siteType === '사무직' ? ['일반사무', 'IT/컴퓨터', '고객응대', '기획/설계', '현장관리', '기타'] :
+                          siteType === '사무직' ? ['일반사무', 'IT/컴퓨터', '고객응대', '기획/설계', '안전 관리', '기타'] :
                           ['상하차', '창고관리', '운전/운송', '장비운용', '기타']).map((type) => {
                           const isSelected = workTypes.includes(type);
                           return (
@@ -1459,7 +1458,7 @@ function ClientSideContent() {
                           <span key={type} className="px-2.5 py-1 bg-indigo-100 text-indigo-700 rounded-lg md:rounded-full text-[10px] md:text-sm font-bold">{type}</span>
                         ))}
                       </div>
-                      <p className="text-gray-500 mb-6 md:mb-8 text-xs md:text-base text-left leading-relaxed">현장의 전반적인 상황이나 공통적인 안전 수칙 등을 입력하시면 분석에 반영됩니다.</p>
+                      <p className="text-gray-500 mb-6 md:mb-8 text-xs md:text-base text-left leading-relaxed">전반적인 상황이나 공통적인 안전 수칙 등을 입력하시면 분석에 반영됩니다.</p>
                       
                       <textarea
                         value={generalInfo}
@@ -1508,7 +1507,7 @@ function ClientSideContent() {
                           </div>
                           <div className="text-left md:text-center">
                             <h3 className="text-base md:text-2xl font-black text-gray-900 mb-1 md:mb-3">사진으로 위험성평가</h3>
-                            <p className="text-gray-500 text-[10px] md:text-sm font-medium leading-tight">현장 사진 분석 기반</p>
+                            <p className="text-gray-500 text-[10px] md:text-sm font-medium leading-tight">사진 분석 기반</p>
                           </div>
                         </button>
                         <button
@@ -1559,7 +1558,7 @@ function ClientSideContent() {
                         >
                           <h3 className="text-xl md:text-3xl font-black text-violet-700 mb-1 md:mb-2">5 x 5</h3>
                           <p className="text-violet-600 font-bold mb-2 md:mb-4 italic text-[10px] md:text-base">중대성(5) x 가능성(5)</p>
-                          <p className="text-gray-500 text-[10px] md:text-sm font-medium leading-tight">정밀한 분석이 필요한<br className="md:hidden" /> 현장에 권장</p>
+                          <p className="text-gray-500 text-[10px] md:text-sm font-medium leading-tight">정밀한 분석이 필요한<br className="md:hidden" /> 사업장에 권장</p>
                         </button>
                       </div>
                       <button 

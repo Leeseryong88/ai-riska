@@ -147,17 +147,17 @@ export const LogDetail: React.FC<LogDetailProps> = ({ log, onEdit, onDelete, onB
               </div>
               <div className="text-right">
                 <p className="text-[9px] font-bold text-gray-400 uppercase mb-0.5">작성자</p>
-                <p className="text-xs font-bold text-gray-900">현장 안전관리자</p>
+                <p className="text-xs font-bold text-gray-900">안전관리자</p>
               </div>
             </div>
           </section>
 
-          {/* 1. 현장 사진 대지 - Moved to top as requested */}
+          {/* 1. 사진 대지 - Moved to top as requested */}
           {log.photos && log.photos.length > 0 && (
             <section className="mb-6">
               <h3 className="text-[11px] font-black text-gray-900 mb-2 flex items-center gap-2">
                 <div className="w-1 h-3 bg-gray-900" />
-                {getSectionNum()}. 현장 사진 대지
+                {getSectionNum()}. 사진 대지
               </h3>
               <div className="grid grid-cols-2 gap-3">
                 {log.photos.map((photo, index) => (
@@ -165,12 +165,12 @@ export const LogDetail: React.FC<LogDetailProps> = ({ log, onEdit, onDelete, onB
                     <div className="aspect-[16/9] rounded-sm overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center">
                       <img 
                         src={photo} 
-                        alt={`현장사진 ${index + 1}`} 
+                        alt={`사진 ${index + 1}`} 
                         className="w-full h-full object-cover" 
                         crossOrigin="anonymous" 
                       />
                     </div>
-                    <p className="text-[8px] font-bold text-gray-400 text-center">[사진 {index + 1}] 현장 점검 기록</p>
+                    <p className="text-[8px] font-bold text-gray-400 text-center">[사진 {index + 1}] 점검 기록</p>
                   </div>
                 ))}
               </div>

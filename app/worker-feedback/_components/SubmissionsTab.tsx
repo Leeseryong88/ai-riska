@@ -138,7 +138,7 @@ export function SubmissionsTab() {
     return (
       <Card className="border-dashed border-gray-300 bg-gray-50 py-16 text-center">
         <p className="text-sm font-bold text-gray-600">접수된 의견이 없습니다.</p>
-        <p className="mt-1 text-xs text-gray-500">접수 링크를 현장에 안내하면 여기에 표시됩니다.</p>
+        <p className="mt-1 text-xs text-gray-500">접수 링크를 안내하면 여기에 표시됩니다.</p>
       </Card>
     );
   }
@@ -211,7 +211,7 @@ export function SubmissionsTab() {
                     )}
                     {row.department && (
                       <span>
-                        <span className="font-bold text-gray-400">소속·현장</span> {row.department}
+                        <span className="font-bold text-gray-400">소속</span> {row.department}
                       </span>
                     )}
                   </>
@@ -274,7 +274,7 @@ export function SubmissionsTab() {
                     )}
                     {selected.department && (
                       <span>
-                        <span className="font-bold text-gray-500">소속·현장</span> {selected.department}
+                        <span className="font-bold text-gray-500">소속</span> {selected.department}
                       </span>
                     )}
                   </div>

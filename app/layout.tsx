@@ -18,8 +18,8 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.ai-riska.com'),
   title: '안전보건계획서, 위험성평가 AI 자동화',
-  description: '현장 맞춤형 안전보건계획서 작성 및 위험성평가, 이제 AI로 자동화하세요. 계획서 수립부터 위험요소 분석 및 개선대책 수립까지 10초 만에 완료하는 안전관리 필수 솔루션입니다.',
-  keywords: '안전보건계획서, 안전보건계획서 샘플, 안전보건계획서 양식, 위험성평가, AI 안전, 건설현장 안전, 산업안전, 이미지 분석, Gemini AI, 안전진단, 안전감시단, 감시단, 안전관리자, 관리감독자, 보건관리자, 건설안전, 안전관리, 산업안전보건법, TBM, 위험요인, 안전점검, 스마트안전, 안전보고서, 위험성평가표, 아차사고, 안전교육',
+  description: '맞춤형 안전보건계획서 작성 및 위험성평가, 이제 AI로 자동화하세요. 계획서 수립부터 위험요소 분석 및 개선대책 수립까지 10초 만에 완료하는 안전관리 필수 솔루션입니다.',
+  keywords: '안전보건계획서, 안전보건계획서 샘플, 안전보건계획서 양식, 위험성평가, AI 안전, 사업장 안전, 산업안전, 이미지 분석, Gemini AI, 안전진단, 안전감시단, 감시단, 안전관리자, 관리감독자, 보건관리자, 건설안전, 안전관리, 산업안전보건법, TBM, 위험요인, 안전점검, 스마트안전, 안전보고서, 위험성평가표, 아차사고, 안전교육',
   authors: [{ name: 'AI Riska' }],
   icons: {
     icon: '/icon.png',
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: '안전보건계획서, 위험성평가 AI 자동화',
-    description: '현장 맞춤형 안전보건계획서와 위험성평가를 AI로 스마트하게 자동화하세요. 효율적인 안전관리 솔루션을 제공합니다.',
+    description: '맞춤형 안전보건계획서와 위험성평가를 AI로 스마트하게 자동화하세요. 효율적인 안전관리 솔루션을 제공합니다.',
     url: 'https://www.ai-riska.com',
     siteName: 'AI Riska',
     images: [
