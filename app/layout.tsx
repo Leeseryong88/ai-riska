@@ -19,7 +19,7 @@ function resolveMetadataBase(): URL {
   if (process.env.NODE_ENV !== 'production') {
     return new URL('http://localhost:3000');
   }
-  return new URL('https://www.ai-riska.com');
+  return new URL('https://modu-safe.com');
 }
 
 const metadataBase = resolveMetadataBase();
@@ -48,7 +48,7 @@ export const metadata: Metadata = {
     title: '모두의 안전 | 우리 회사에 맞는 안전 서류를 직접',
     description:
       '컨설팅 비용·남의 양식 복사 대신 AI와 실무 도구로 계획서·위험성평가·현장 기록을 맞춤 작성하세요.',
-    url: 'https://www.ai-riska.com',
+    url: 'https://modu-safe.com/',
     siteName: '모두의 안전',
     images: [
       {
