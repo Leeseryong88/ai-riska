@@ -5,11 +5,15 @@ import { onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { auth, db } from '@/app/lib/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 
-interface UserProfile {
+export interface UserProfile {
+  uid?: string;
   email: string;
   name: string;
   organization: string;
   phone: string;
+  subscriptionActive?: boolean;
+  subscriptionPlanAmount?: number;
+  subscriptionUpdatedAt?: string;
 }
 
 interface AuthContextType {

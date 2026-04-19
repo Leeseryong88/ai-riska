@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import WorkspaceShell from '@/components/navigation/WorkspaceShell';
 import { compressImage } from '@/app/lib/image-utils';
 import { useAuth } from '@/app/context/AuthContext';
+import { apiAuthHeaders } from '@/lib/api-client';
 import { db } from '@/app/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Save } from 'lucide-react';
@@ -338,7 +339,7 @@ export default function HealthSafetyPlanPage() {
     try {
       const response = await fetch('/api/health-safety-plan', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await apiAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ answers: mainAnswers, workDetails: details }),
       });
 

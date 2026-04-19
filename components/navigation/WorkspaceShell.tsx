@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { isAiServicePath } from '@/lib/subscription-constants';
 import { ReactNode, Suspense, useEffect, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import {
@@ -110,8 +111,12 @@ export default function WorkspaceShell({
   children,
   contentClassName = '',
 }: WorkspaceShellProps) {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const pathname = usePathname();
+  const aiServicesLocked =
+    !!user &&
+    isAiServicePath(pathname) &&
+    userProfile?.subscriptionActive !== true;
   const currentService = getServiceByHref(serviceHref);
   const currentCategory = currentService ? serviceCategories[currentService.category] : undefined;
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
@@ -274,21 +279,43 @@ export default function WorkspaceShell({
           </Suspense>
           
           <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-            <div className="mx-auto max-w-6xl">
-              {(title || description) && (
-                <header className="mb-8">
-                  <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
-                    {title || currentService?.title}
-                  </h1>
-                  {description || currentService?.description ? (
-                    <p className="mt-2 text-sm font-medium text-slate-500 sm:text-base">
-                      {description || currentService?.description}
-                    </p>
-                  ) : null}
-                </header>
-              )}
+            <div className="relative mx-auto min-h-[12rem] max-w-6xl">
+              <div
+                className={aiServicesLocked ? 'pointer-events-none select-none' : ''}
+                aria-hidden={aiServicesLocked ? true : undefined}
+              >
+                {(title || description) && (
+                  <header className="mb-8">
+                    <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+                      {title || currentService?.title}
+                    </h1>
+                    {description || currentService?.description ? (
+                      <p className="mt-2 text-sm font-medium text-slate-500 sm:text-base">
+                        {description || currentService?.description}
+                      </p>
+                    ) : null}
+                  </header>
+                )}
 
-              <div className={contentClassName}>{children}</div>
+                <div className={contentClassName}>{children}</div>
+              </div>
+
+              {aiServicesLocked && (
+                <div className="pointer-events-auto absolute inset-0 z-50 flex items-center justify-center rounded-2xl bg-white/75 p-6 backdrop-blur-[2px]">
+                  <div className="max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-xl shadow-slate-200/80">
+                    <p className="text-base font-black text-slate-900">구독이 필요합니다</p>
+                    <p className="mt-2 text-sm text-slate-600">
+                      AI Services는 구독 회원만 이용할 수 있습니다. 구독 후 모든 기능을 사용해 보세요.
+                    </p>
+                    <Link
+                      href="/subscription"
+                      className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-blue-600 py-3 text-sm font-bold text-white shadow-md shadow-blue-200 transition hover:bg-blue-700"
+                    >
+                      구독하러 가기
+                    </Link>
+                  </div>
+                </div>
+              )}
             </div>
           </main>
         </div>

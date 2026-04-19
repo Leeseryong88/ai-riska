@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { getServiceByHref, isServiceActive, services } from '@/config/services';
 import ServiceGlyph from '@/components/navigation/ServiceGlyph';
 import { useAuth } from '@/app/context/AuthContext';
+import { isAdminUid } from '@/lib/admin-client';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/app/lib/firebase';
 
@@ -107,6 +108,32 @@ export default function TopBar({ onOpenContact }: TopBarProps) {
               </svg>
               <span className="hidden sm:inline">게시판</span>
             </Link>
+
+            {user && (
+              <Link
+                href="/subscription"
+                className={`hidden items-center gap-2 rounded-full px-4 py-2 text-xs font-black transition-all active:scale-95 sm:flex ${
+                  pathname === '/subscription'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-200'
+                    : 'border border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700'
+                }`}
+              >
+                구독
+              </Link>
+            )}
+
+            {user && isAdminUid(user.uid) && (
+              <Link
+                href="/admin"
+                className={`hidden items-center gap-2 rounded-full px-4 py-2 text-xs font-black transition-all active:scale-95 sm:flex ${
+                  pathname === '/admin'
+                    ? 'bg-slate-900 text-white shadow-lg shadow-slate-200'
+                    : 'border border-slate-200 bg-white text-slate-600 hover:border-slate-400 hover:text-slate-900'
+                }`}
+              >
+                관리자
+              </Link>
+            )}
             
             {user && (
               <div className="relative">
@@ -126,6 +153,22 @@ export default function TopBar({ onOpenContact }: TopBarProps) {
                       <p className="text-xs text-slate-400 font-medium">소속: {userProfile?.organization || '미지정'}</p>
                       <p className="text-xs text-slate-400 font-medium truncate">{user.email}</p>
                     </div>
+                    <Link
+                      href="/subscription"
+                      className="block w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      구독 관리
+                    </Link>
+                    {isAdminUid(user.uid) && (
+                      <Link
+                        href="/admin"
+                        className="block w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        관리자
+                      </Link>
+                    )}
                     <button
                       onClick={handleLogout}
                       className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
@@ -196,6 +239,32 @@ export default function TopBar({ onOpenContact }: TopBarProps) {
                   <ServiceGlyph icon="hub" className={`h-5 w-5 ${pathname === '/' ? 'text-white' : 'text-slate-400'}`} />
                   <span>대시보드</span>
                 </Link>
+                {user && (
+                  <Link
+                    href="/subscription"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`mt-1 flex items-center gap-3 rounded-2xl px-4 py-3.5 text-base font-bold transition-all ${
+                      pathname === '/subscription'
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-100'
+                        : 'text-slate-600 active:bg-slate-50'
+                    }`}
+                  >
+                    <span>구독</span>
+                  </Link>
+                )}
+                {user && isAdminUid(user.uid) && (
+                  <Link
+                    href="/admin"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`mt-1 flex items-center gap-3 rounded-2xl px-4 py-3.5 text-base font-bold transition-all ${
+                      pathname === '/admin'
+                        ? 'bg-slate-900 text-white shadow-lg shadow-slate-200'
+                        : 'text-slate-600 active:bg-slate-50'
+                    }`}
+                  >
+                    <span>관리자</span>
+                  </Link>
+                )}
               </section>
 
               <section>

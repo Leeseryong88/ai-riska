@@ -6,6 +6,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import WorkspaceShell from '@/components/navigation/WorkspaceShell';
 import { compressImage as compressImageUtil } from '@/app/lib/image-utils';
 import { useAuth } from '@/app/context/AuthContext';
+import { apiAuthHeaders } from '@/lib/api-client';
 import { db, storage } from '@/app/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -114,6 +115,7 @@ function ClientSideCamera() {
 
       const response = await fetch('/api/analyze', {
         method: 'POST',
+        headers: await apiAuthHeaders(),
         body: formData,
       });
 

@@ -152,6 +152,8 @@ export default function LoginPage() {
               organization,
               phone,
               createdAt: new Date().toISOString(),
+              subscriptionActive: false,
+              subscriptionPlanAmount: 28900,
             });
             // 성공 시 페이지 이동은 AuthGuard 또는 useEffect가 처리
           } catch (err: any) {

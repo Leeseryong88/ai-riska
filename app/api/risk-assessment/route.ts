@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { requireActiveSubscription } from '@/lib/server-subscription';
 
 export async function POST(request: NextRequest) {
+  const sub = await requireActiveSubscription(request);
+  if (!sub.ok) return sub.response;
+
   try {
     const formData = await request.formData();
     const imagesData = JSON.parse(formData.get('images') as string);

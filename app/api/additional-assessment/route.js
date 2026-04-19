@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
+import { requireActiveSubscription } from '@/lib/server-subscription';
 
 // API 키를 명시적으로 로깅하여 디버깅 (실제 운영 환경에서는 비활성화 필요)
 const API_KEY = process.env.GOOGLE_GEMINI_API_KEY || "";
@@ -125,6 +126,9 @@ function getImageMimeType(imageUrl) {
 
 export async function POST(request) {
   console.log('추가 위험성평가 API 호출 시작');
+
+  const sub = await requireActiveSubscription(request);
+  if (!sub.ok) return sub.response;
   
   try {
     // API 키 확인

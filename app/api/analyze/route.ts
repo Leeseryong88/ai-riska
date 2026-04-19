@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { requireActiveSubscription } from '@/lib/server-subscription';
 
 // API 응답 타입 정의
 interface ApiResponse {
@@ -8,6 +9,9 @@ interface ApiResponse {
 }
 
 export async function POST(request: NextRequest) {
+  const sub = await requireActiveSubscription(request);
+  if (!sub.ok) return sub.response;
+
   try {
     const formData = await request.formData();
     const imageFile = formData.get('image') as File;

@@ -1,7 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { analyzeImage } from '@/app/lib/gemini';
+import { requireActiveSubscription } from '@/lib/server-subscription';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const sub = await requireActiveSubscription(request);
+  if (!sub.ok) return sub.response;
+
   try {
     const formData = await request.formData();
     const image = formData.get('image') as File;

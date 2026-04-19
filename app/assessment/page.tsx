@@ -9,6 +9,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import WorkspaceShell from '@/components/navigation/WorkspaceShell';
 import { compressImage } from '@/app/lib/image-utils';
 import { useAuth } from '@/app/context/AuthContext';
+import { apiAuthHeaders } from '@/lib/api-client';
 import { db } from '@/app/lib/firebase';
 import { collection, addDoc, serverTimestamp, getDocs, query, where, orderBy, deleteDoc, doc } from 'firebase/firestore';
 
@@ -659,6 +660,7 @@ function ClientSideContent() {
 
       const response = await fetch('/api/analyze', {
         method: 'POST',
+        headers: await apiAuthHeaders(),
         body: formData,
         signal: controller.signal
       });
@@ -765,6 +767,7 @@ function ClientSideContent() {
 
       const response = await fetch('/api/risk-assessment', {
         method: 'POST',
+        headers: await apiAuthHeaders(),
         body: formData,
       });
 
@@ -986,9 +989,7 @@ function ClientSideContent() {
       try {
         const response = await fetch('/api/additional-assessment', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: await apiAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({
             analysisItems: validItems,
           }),
