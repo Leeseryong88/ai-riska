@@ -179,8 +179,8 @@ export default function LoginPage() {
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
       <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-blue-600 mb-2">AI Riska</h1>
-          <p className="text-gray-600">{isSignUp ? '회원가입' : '로그인'}하여 시작하세요</p>
+          <h1 className="text-3xl font-bold text-blue-600 mb-2">모두의 안전</h1>
+          <p className="text-gray-600">{isSignUp ? '회원가입' : '로그인'}하여 안전관리 실무를 시작하세요</p>
         </div>
 
         {error && (

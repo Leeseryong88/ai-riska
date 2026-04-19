@@ -17,26 +17,29 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.ai-riska.com'),
-  title: '안전보건계획서, 위험성평가 AI 자동화',
-  description: '맞춤형 안전보건계획서 작성 및 위험성평가, 이제 AI로 자동화하세요. 계획서 수립부터 위험요소 분석 및 개선대책 수립까지 10초 만에 완료하는 안전관리 필수 솔루션입니다.',
-  keywords: '안전보건계획서, 안전보건계획서 샘플, 안전보건계획서 양식, 위험성평가, AI 안전, 사업장 안전, 산업안전, 이미지 분석, Gemini AI, 안전진단, 안전감시단, 감시단, 안전관리자, 관리감독자, 보건관리자, 건설안전, 안전관리, 산업안전보건법, TBM, 위험요인, 안전점검, 스마트안전, 안전보고서, 위험성평가표, 아차사고, 안전교육',
-  authors: [{ name: 'AI Riska' }],
+  title: '모두의 안전 | 컨설팅·양식 검색 없이 우리 회사 맞춤 안전 서류',
+  description:
+    '비싼 컨설팅이나 인터넷 샘플 찾기 대신, 모두의 안전에서 우리 사업장 정보로 안전보건계획서·위험성평가·일지·허가 초안을 직접 만드세요.',
+  keywords:
+    '모두의 안전, 안전관리, 초보 안전관리자, 안전담당자, 중소기업 안전관리, 위험성평가, 안전보건계획서, 작업허가서, 일일 안전일지, AI 안전, 현장 안전관리, 산업안전, 안전 문서 자동화, 현장 점검',
+  authors: [{ name: '모두의 안전' }],
   icons: {
     icon: '/icon.png',
     shortcut: '/icon.png',
     apple: '/icon.png',
   },
   openGraph: {
-    title: '안전보건계획서, 위험성평가 AI 자동화',
-    description: '맞춤형 안전보건계획서와 위험성평가를 AI로 스마트하게 자동화하세요. 효율적인 안전관리 솔루션을 제공합니다.',
+    title: '모두의 안전 | 우리 회사에 맞는 안전 서류를 직접',
+    description:
+      '컨설팅 비용·남의 양식 복사 대신 AI와 실무 도구로 계획서·위험성평가·현장 기록을 맞춤 작성하세요.',
     url: 'https://www.ai-riska.com',
-    siteName: 'AI Riska',
+    siteName: '모두의 안전',
     images: [
       {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: '안전보건계획서 및 위험성평가 AI 자동화 시스템',
+        alt: '모두의 안전 실무형 안전관리 플랫폼',
       },
     ],
     locale: 'ko_KR',
@@ -44,8 +47,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: '안전보건계획서, 위험성평가 AI 자동화',
-    description: 'AI가 실시간으로 안전보건계획서와 위험성평가를 분석하고 최적의 솔루션을 제안합니다.',
+    title: '모두의 안전 | 샘플 찾지 말고 맞춤 서류',
+    description:
+      '안전보건계획서 양식·위험성평가 샘플 검색 대신, 우리 회사 조건에 맞는 문서 초안을 바로 만드세요.',
     images: ['/og-image.png'],
   },
   robots: {
