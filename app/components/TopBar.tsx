@@ -53,8 +53,8 @@ export default function TopBar({ onOpenContact }: TopBarProps) {
   return (
     <>
       <header className={`sticky top-0 border-b border-slate-100 bg-white/80 backdrop-blur-xl lg:bg-transparent lg:border-none transition-all duration-300 z-40`}>
-        <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between px-4 sm:h-20 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
+        <div className="mx-auto flex min-h-14 max-w-[1600px] items-center justify-between px-4 py-1.5 sm:min-h-[4.2rem] sm:px-6 sm:py-2 lg:px-8">
+          <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3 lg:flex-none lg:gap-3">
             {/* Mobile Menu Toggle */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -66,14 +66,22 @@ export default function TopBar({ onOpenContact }: TopBarProps) {
               </svg>
             </button>
 
-            {/* Mobile Logo Only */}
-            <Link href="/" className="flex items-center gap-3 lg:hidden">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-200">
-                <svg className="h-4.5 w-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-              </div>
-              <span className="text-base font-black tracking-tight text-blue-600">모두의 안전</span>
+            {/* Mobile Logo — 랜딩과 동일: PNG 직접 노출 */}
+            <Link
+              href="/"
+              className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3 lg:hidden"
+            >
+              <img
+                src="/icon.png"
+                alt="모두의 안전"
+                width={128}
+                height={128}
+                className="h-[2.8rem] w-[2.8rem] shrink-0 object-contain sm:h-14 sm:w-14"
+                decoding="async"
+              />
+              <span className="min-w-0 text-[1.3125rem] font-black leading-tight tracking-tight text-blue-700 sm:text-[1.575rem]">
+                모두의 안전
+              </span>
             </Link>
 
             {/* Desktop Breadcrumb/Title Area */}
@@ -147,13 +155,18 @@ export default function TopBar({ onOpenContact }: TopBarProps) {
         <div className="flex h-full flex-col bg-white overflow-hidden">
           {/* Menu Header */}
           <div className="flex items-center justify-between border-b border-slate-50 px-6 py-5 shrink-0">
-            <Link href="/" className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-md">
-                <svg className="h-4.5 w-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-              </div>
-              <span className="text-base font-black tracking-tight text-blue-600">모두의 안전</span>
+            <Link href="/" className="flex min-w-0 flex-1 items-center gap-2.5 pr-2 sm:gap-3">
+              <img
+                src="/icon.png"
+                alt="모두의 안전"
+                width={128}
+                height={128}
+                className="h-[2.8rem] w-[2.8rem] shrink-0 object-contain sm:h-14 sm:w-14"
+                decoding="async"
+              />
+              <span className="min-w-0 text-[1.3125rem] font-black leading-tight tracking-tight text-blue-700 sm:text-[1.575rem]">
+                모두의 안전
+              </span>
             </Link>
             <button
               onClick={() => setIsMobileMenuOpen(false)}

@@ -160,13 +160,21 @@ export default function WorkspaceShell({
         {/* Fixed Left Sidebar */}
         <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-white lg:block">
           <div className="flex h-full flex-col p-4">
-            <Link href="/" className="mb-8 flex items-center gap-3 px-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-200">
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-              </div>
-              <p className="text-base font-black tracking-tight text-blue-600">모두의 안전</p>
+            <Link
+              href="/"
+              className="mb-5 flex min-w-0 items-center gap-2.5 px-2 sm:gap-3"
+            >
+              <img
+                src="/icon.png"
+                alt="모두의 안전"
+                width={128}
+                height={128}
+                className="h-[2.8rem] w-[2.8rem] shrink-0 object-contain sm:h-14 sm:w-14"
+                decoding="async"
+              />
+              <span className="min-w-0 text-[1.3125rem] font-black leading-tight tracking-tight text-blue-700 sm:text-[1.575rem]">
+                모두의 안전
+              </span>
             </Link>
 
             <nav className="flex-1 space-y-1">
