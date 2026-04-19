@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, FileText, Menu, Users, X, ShieldCheck, ClipboardCheck, FileCheck, HardHat, Loader2 } from 'lucide-react';
+import { ArrowRight, Menu, Users, X, ShieldCheck, ClipboardCheck, FileCheck, HardHat, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import ServiceGlyph from '@/components/navigation/ServiceGlyph';
 import { services, type ServiceDefinition } from '@/config/services';
@@ -178,14 +178,10 @@ export default function LandingPage() {
           >
             <h1 className="text-3xl font-black leading-snug tracking-tight sm:text-4xl lg:text-5xl">
               <span className="block bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                클릭 한번으로 서류를 직접 만드세요
+                클릭 한번으로 안전관리 서류를 직접 만드세요
               </span>
             </h1>
           </motion.div>
-          <p className="mb-5 mt-5 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 sm:mb-6 sm:mt-6 sm:text-sm">
-            <FileText className="h-3.5 w-3.5 shrink-0" />
-            비싼 컨설팅 비용 내지마세요 · 양식·샘플 찾지 마세요
-          </p>
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -230,16 +226,6 @@ export default function LandingPage() {
               <p className="whitespace-nowrap px-2 text-base font-medium text-slate-600 sm:text-lg">
                 외주 컨설팅 대신, AI와 실무 도구로 우리 정보에 맞는 계획서·평가·일지·허가 초안을 만듭니다.
               </p>
-            </div>
-            <div className="mt-8 flex flex-wrap justify-center gap-2">
-              {['안전보건계획서', '위험성평가', '작업허가', '안전일지'].map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-600"
-                >
-                  {tag}
-                </span>
-              ))}
             </div>
           </motion.div>
         </div>
