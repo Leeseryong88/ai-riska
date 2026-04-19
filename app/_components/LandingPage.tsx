@@ -114,10 +114,21 @@ export default function LandingPage() {
         </AnimatePresence>
       </nav>
 
-      {/* Hero — 배지 → 이미지 → 본문 */}
+      {/* Hero — 제목 → 배지 → 이미지 → 부가 본문 */}
       <section className="bg-white pb-12 pt-28 sm:pb-16 sm:pt-36 lg:pt-40">
         <div className="mx-auto max-w-6xl px-4 text-center sm:px-6 lg:px-8">
-          <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 sm:mb-6 sm:text-sm">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            <h1 className="text-3xl font-black leading-snug tracking-tight sm:text-4xl lg:text-5xl">
+              <span className="block bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                클릭 한번으로 서류를 직접 만드세요
+              </span>
+            </h1>
+          </motion.div>
+          <p className="mb-5 mt-5 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 sm:mb-6 sm:mt-6 sm:text-sm">
             <FileText className="h-3.5 w-3.5 shrink-0" />
             비싼 컨설팅 비용 내지마세요 · 양식·샘플 찾지 마세요
           </p>
@@ -161,16 +172,13 @@ export default function LandingPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, delay: 0.05 }}
           >
-            <h1 className="text-3xl font-black leading-snug tracking-tight sm:text-4xl lg:text-5xl">
-              <span className="block bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                클릭 한번으로 서류를 직접 만드세요
-              </span>
-            </h1>
-            <p className="mx-auto mt-5 max-w-xl text-base font-medium text-slate-600 sm:text-lg">
-              외주 컨설팅 대신, AI와 실무 도구로 우리 정보에 맞는 계획서·평가·일지·허가 초안을 만듭니다.
-            </p>
+            <div className="mx-auto mt-0 flex w-full justify-center overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <p className="whitespace-nowrap px-2 text-base font-medium text-slate-600 sm:text-lg">
+                외주 컨설팅 대신, AI와 실무 도구로 우리 정보에 맞는 계획서·평가·일지·허가 초안을 만듭니다.
+              </p>
+            </div>
             <div className="mt-8 flex flex-wrap justify-center gap-2">
-              {['위험성평가', '안전보건계획서', '작업허가', '안전일지'].map((tag) => (
+              {['안전보건계획서', '위험성평가', '작업허가', '안전일지'].map((tag) => (
                 <span
                   key={tag}
                   className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-600"
