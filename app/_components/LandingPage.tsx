@@ -109,8 +109,11 @@ export default function LandingPage() {
           </Link>
 
           <div className="hidden items-center gap-6 text-sm font-bold text-slate-600 md:flex">
-            <a href="#services" className="transition-colors hover:text-blue-600">
-              기능
+            <a href="#services-grid" className="transition-colors hover:text-blue-600">
+              주요 서비스 안내
+            </a>
+            <a href="#samples" className="transition-colors hover:text-blue-600">
+              서류 예시
             </a>
             <Link
               href="/login"
@@ -137,8 +140,11 @@ export default function LandingPage() {
               exit={{ opacity: 0, height: 0 }}
               className="space-y-3 overflow-hidden border-b border-slate-100 bg-white px-4 py-4 shadow-lg md:hidden"
             >
-              <a href="#services" onClick={() => setIsMenuOpen(false)} className="block py-2 font-bold text-slate-800">
-                기능
+              <a href="#services-grid" onClick={() => setIsMenuOpen(false)} className="block py-2 font-bold text-slate-800">
+                주요 서비스 안내
+              </a>
+              <a href="#samples" onClick={() => setIsMenuOpen(false)} className="block py-2 font-bold text-slate-800">
+                서류 예시
               </a>
               <Link href="/login" className="block rounded-xl bg-blue-600 py-3 text-center font-bold text-white">
                 로그인 / 시작하기
@@ -189,12 +195,12 @@ export default function LandingPage() {
                   무료로 시작하기
                   <ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5 sm:h-5 sm:w-5" />
                 </Link>
-                <a
-                  href="#services"
-                  className="inline-flex items-center justify-center rounded-2xl border border-white/90 bg-white/95 px-6 py-3.5 text-sm font-black text-slate-800 shadow-sm backdrop-blur-sm transition hover:bg-white sm:px-8 sm:py-4 sm:text-base"
-                >
-                  어떤 서류가 되나요
-                </a>
+                  <a
+                    href="#services-grid"
+                    className="inline-flex items-center justify-center rounded-2xl border border-white/90 bg-white/95 px-6 py-3.5 text-sm font-black text-slate-800 shadow-sm backdrop-blur-sm transition hover:bg-white sm:px-8 sm:py-4 sm:text-base"
+                  >
+                    어떤 서류가 되나요
+                  </a>
               </div>
             </div>
           </motion.div>
@@ -226,7 +232,7 @@ export default function LandingPage() {
       </section>
 
       {/* 기능 서비스 통합 섹션 */}
-      <section id="services-grid" className="border-t border-slate-100 bg-slate-50/50 py-16 sm:py-24">
+      <section id="services-grid" className="scroll-mt-20 border-t border-slate-100 bg-slate-50/50 py-16 sm:py-24 sm:scroll-mt-28">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="mb-12 text-center">
             <h2 className="text-3xl font-black text-slate-900 sm:text-4xl">주요 서비스 안내</h2>
@@ -277,7 +283,7 @@ export default function LandingPage() {
       </section>
 
       {/* 샘플 미리보기 섹션 (이미지 참고 레이아웃) */}
-      <section id="samples" className="border-t border-slate-100 bg-white py-20 sm:py-32">
+      <section id="samples" className="scroll-mt-16 border-t border-slate-100 bg-white pb-20 pt-12 sm:pb-32 sm:pt-16 sm:scroll-mt-24">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="mb-16 text-center">
             <h2 className="text-3xl font-black text-slate-900 sm:text-4xl">서류 예시</h2>
@@ -379,26 +385,28 @@ export default function LandingPage() {
       </section>
 
       {/* CTA */}
-      <section id="cta" className="pb-16 sm:pb-20">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-          <div className="relative overflow-hidden rounded-[1.75rem] bg-blue-600 px-8 py-12 text-center shadow-xl shadow-blue-200 sm:rounded-[2rem] sm:py-14">
-            <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-white/10 blur-3xl" />
-            <Users className="relative mx-auto h-10 w-10 text-white/90" />
-            <h2 className="relative mt-4 text-2xl font-black leading-snug text-white sm:text-3xl">
-              컨설팅 견적 전에
-              <br />
-              우리 회사 서류부터 만들어 보세요
+      <section id="cta" className="pb-20 sm:pb-32">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="relative overflow-hidden rounded-[2.5rem] bg-blue-600 px-6 py-12 text-center shadow-2xl shadow-blue-200/60 sm:py-20">
+            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
+            <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-indigo-500/20 blur-3xl" />
+            
+            <Users className="relative mx-auto h-12 w-12 text-white/90" />
+            <h2 className="relative mt-6 text-2xl font-black leading-tight text-white sm:text-4xl">
+              컨설팅 견적 전에 우리 회사 서류부터 직접 만들어 보세요
             </h2>
-            <p className="relative mx-auto mt-3 max-w-sm text-sm font-medium text-blue-100">
-              가입 후 바로 계획서·위험성평가·현장 기록 기능을 쓸 수 있습니다.
+            <p className="relative mx-auto mt-4 max-w-2xl text-base font-medium text-blue-100 sm:text-lg">
+              가입 즉시 위험성평가·안전보건계획서 등 핵심 서류 작성 기능을 시작할 수 있습니다.
             </p>
-            <Link
-              href="/login"
-              className="relative mt-8 inline-flex items-center gap-2 rounded-2xl bg-white px-10 py-4 text-base font-black text-blue-600 shadow-lg transition hover:bg-blue-50"
-            >
-              시작하기
-              <ArrowRight className="h-5 w-5" />
-            </Link>
+            <div className="relative mt-10">
+              <Link
+                href="/login"
+                className="inline-flex items-center gap-2 rounded-2xl bg-white px-12 py-4 text-lg font-black text-blue-600 shadow-xl transition-all hover:bg-blue-50 active:scale-95"
+              >
+                지금 시작하기
+                <ArrowRight className="h-6 w-6" />
+              </Link>
+            </div>
           </div>
         </div>
       </section>

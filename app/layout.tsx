@@ -80,7 +80,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ko">
+    <html lang="ko" className="scroll-smooth">
       <head>
       </head>
       <body className={inter.className}>
