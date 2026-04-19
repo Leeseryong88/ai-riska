@@ -111,6 +111,7 @@ export default function WorkspaceShell({
   contentClassName = '',
 }: WorkspaceShellProps) {
   const { user } = useAuth();
+  const pathname = usePathname();
   const currentService = getServiceByHref(serviceHref);
   const currentCategory = currentService ? serviceCategories[currentService.category] : undefined;
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
@@ -223,8 +224,21 @@ export default function WorkspaceShell({
                 />
               </Suspense>
 
-              <div className="mt-8 mb-2 px-3 text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 bg-blue-50/50 py-1 rounded-md w-fit">
-                AI Services
+              <div className="mt-8 mb-2 flex items-center justify-between">
+                <div className="px-3 text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 bg-blue-50/50 py-1 rounded-md w-fit">
+                  AI Services
+                </div>
+                <Link
+                  href="/storage"
+                  className={`flex h-6 w-6 items-center justify-center rounded-md transition-all ${
+                    pathname === '/storage'
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+                  }`}
+                  title="저장소"
+                >
+                  <ServiceGlyph icon="storage" className="h-4 w-4" />
+                </Link>
               </div>
               <Suspense
                 fallback={
@@ -238,17 +252,6 @@ export default function WorkspaceShell({
                   filterIds={['camera', 'assessment', 'health-safety-plan', 'safety-management-fee']}
                   serviceHref={serviceHref}
                 />
-              </Suspense>
-
-              <div className="mt-8 mb-2 px-3 text-[10px] font-black uppercase tracking-[0.2em] text-amber-600 bg-amber-50/50 py-1 rounded-md w-fit">
-                Archives
-              </div>
-              <Suspense
-                fallback={
-                  <ShellServiceLinksFallback filterIds={['storage']} serviceHref={serviceHref} />
-                }
-              >
-                <ShellServiceLinks filterIds={['storage']} serviceHref={serviceHref} />
               </Suspense>
             </nav>
 

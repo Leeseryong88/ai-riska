@@ -234,39 +234,26 @@ export default function TopBar({ onOpenContact }: TopBarProps) {
               </section>
 
               <section>
-                <p className="mb-4 px-3 text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 bg-blue-50 py-1 rounded-md w-fit">
-                  AI Services
-                </p>
+                <div className="mb-4 flex items-center justify-between">
+                  <p className="px-3 text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 bg-blue-50 py-1 rounded-md w-fit">
+                    AI Services
+                  </p>
+                  <Link
+                    href="/storage"
+                    className={`flex h-8 w-8 items-center justify-center rounded-xl transition-all ${
+                      pathname === '/storage'
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-100'
+                        : 'text-slate-400 bg-slate-50 hover:text-slate-600'
+                    }`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    aria-label="저장소"
+                  >
+                    <ServiceGlyph icon="storage" className="h-4.5 w-4.5" />
+                  </Link>
+                </div>
                 <div className="space-y-1">
                   {services
                     .filter((service) => ['camera', 'assessment', 'health-safety-plan', 'safety-management-fee'].includes(service.id))
-                    .map((service) => {
-                      const isActive = isServiceActive(service, pathname, search);
-                      return (
-                        <Link
-                          key={service.id}
-                          href={service.href}
-                          className={`flex items-center gap-3 rounded-2xl px-4 py-3.5 text-base font-bold transition-all ${
-                            isActive
-                              ? 'bg-blue-50 text-blue-700'
-                              : 'text-slate-600 active:bg-slate-50'
-                          }`}
-                        >
-                          <ServiceGlyph icon={service.icon} className={`h-5 w-5 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
-                          <span className="flex-1 truncate">{service.shortTitle}</span>
-                        </Link>
-                      );
-                    })}
-                </div>
-              </section>
-
-              <section>
-                <p className="mb-4 px-3 text-[10px] font-black uppercase tracking-[0.2em] text-amber-600 bg-amber-50 py-1 rounded-md w-fit">
-                  Archives
-                </p>
-                <div className="space-y-1">
-                  {services
-                    .filter((service) => ['storage'].includes(service.id))
                     .map((service) => {
                       const isActive = isServiceActive(service, pathname, search);
                       return (
