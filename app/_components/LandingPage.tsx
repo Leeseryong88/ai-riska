@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, FileText, Menu, Users, X, ShieldCheck, ClipboardCheck, FileCheck, HardHat } from 'lucide-react';
+import { ArrowRight, FileText, Menu, Users, X, ShieldCheck, ClipboardCheck, FileCheck, HardHat, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import ServiceGlyph from '@/components/navigation/ServiceGlyph';
 import { services, type ServiceDefinition } from '@/config/services';
@@ -85,10 +85,24 @@ const samples = [
 export default function LandingPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(samples[0].id);
+  const [isSampleLoading, setIsSampleLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isModalImageLoading, setIsModalImageLoading] = useState(true);
   const [selectedService, setSelectedService] = useState<ServiceDefinition | null>(null);
 
   const activeSample = samples.find((s) => s.id === activeTab) || samples[0];
+
+  const handleTabChange = (id: string) => {
+    if (id !== activeTab) {
+      setIsSampleLoading(true);
+      setActiveTab(id);
+    }
+  };
+
+  const handleOpenModal = (image: string) => {
+    setIsModalImageLoading(true);
+    setSelectedImage(image);
+  };
 
   return (
     <div className="min-h-screen bg-white text-slate-900 selection:bg-blue-100 selection:text-blue-900">
@@ -300,7 +314,7 @@ export default function LandingPage() {
               {samples.map((sample) => (
                 <button
                   key={sample.id}
-                  onClick={() => setActiveTab(sample.id)}
+                  onClick={() => handleTabChange(sample.id)}
                   className={`relative px-4 py-5 text-sm font-bold transition-all sm:px-8 sm:text-base ${
                     activeTab === sample.id
                       ? 'text-blue-600'
@@ -335,13 +349,19 @@ export default function LandingPage() {
                     <motion.div
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      className="h-full w-full cursor-zoom-in"
-                      onClick={() => setSelectedImage(activeSample.image)}
+                      className="h-full w-full cursor-zoom-in relative"
+                      onClick={() => handleOpenModal(activeSample.image)}
                     >
+                      {isSampleLoading && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-slate-50/50">
+                          <Loader2 className="h-8 w-8 animate-spin text-blue-600/60" />
+                        </div>
+                      )}
                       <img
                         src={activeSample.image}
                         alt={`${activeSample.title} 샘플 프리뷰`}
-                        className="h-full w-full object-contain object-top"
+                        className={`h-full w-full object-contain object-top transition-opacity duration-300 ${isSampleLoading ? 'opacity-0' : 'opacity-1'}`}
+                        onLoad={() => setIsSampleLoading(false)}
                       />
                     </motion.div>
                   </motion.div>
@@ -441,10 +461,16 @@ export default function LandingPage() {
               className="relative max-h-full max-w-full overflow-hidden rounded-xl bg-white shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
+              {isModalImageLoading && (
+                <div className="absolute inset-0 z-[120] flex items-center justify-center bg-white/50 backdrop-blur-sm">
+                  <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+                </div>
+              )}
               <img
                 src={selectedImage}
                 alt="샘플 확대 보기"
-                className="max-h-[90vh] w-auto object-contain"
+                className={`max-h-[90vh] w-auto object-contain transition-opacity duration-300 ${isModalImageLoading ? 'opacity-0' : 'opacity-1'}`}
+                onLoad={() => setIsModalImageLoading(false)}
               />
             </motion.div>
           </motion.div>
