@@ -24,6 +24,8 @@ interface WorkspaceShellProps {
   description?: string;
   children: ReactNode;
   contentClassName?: string;
+  /** 메인 영역 제목·본문 가운데 정렬 (예: 구독 페이지) */
+  centerContent?: boolean;
 }
 
 function ShellServiceLinks({
@@ -110,6 +112,7 @@ export default function WorkspaceShell({
   description,
   children,
   contentClassName = '',
+  centerContent = false,
 }: WorkspaceShellProps) {
   const { user, userProfile } = useAuth();
   const pathname = usePathname();
@@ -285,7 +288,7 @@ export default function WorkspaceShell({
                 aria-hidden={aiServicesLocked ? true : undefined}
               >
                 {(title || description) && (
-                  <header className="mb-8">
+                  <header className={`mb-8 ${centerContent ? 'mx-auto max-w-lg text-center' : ''}`}>
                     <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
                       {title || currentService?.title}
                     </h1>

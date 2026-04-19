@@ -39,7 +39,7 @@ export default function SubscriptionPage() {
 
   const handleCancel = async () => {
     if (!user) return;
-    if (!window.confirm('구독을 취소하시겠습니까? AI Services 이용이 제한됩니다.')) return;
+    if (!window.confirm('구독을 취소하시겠습니까? 사진 분석 등 일부 AI Services 이용이 제한됩니다. (저장소는 계속 이용 가능)')) return;
     setCancelLoading(true);
     setError('');
     try {
@@ -58,10 +58,11 @@ export default function SubscriptionPage() {
   return (
     <WorkspaceShell
       title="구독 및 결제"
-      description="월 정액 구독으로 AI Services 전체를 이용할 수 있습니다. (PG 연동 전 모의 결제)"
-      contentClassName="max-w-xl"
+      description="월 정액 구독으로 주요 AI Services를 이용할 수 있습니다. (PG 연동 전 모의 결제)"
+      contentClassName="mx-auto w-full max-w-lg"
+      centerContent
     >
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+      <div className="mx-auto w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm sm:p-8">
         <div className="mb-6 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 p-6 text-white shadow-lg">
           <p className="text-xs font-bold uppercase tracking-widest text-blue-100">모두의 안전 · 월 구독</p>
           <p className="mt-2 text-3xl font-black sm:text-4xl">
@@ -70,7 +71,10 @@ export default function SubscriptionPage() {
             <span className="text-base font-semibold text-blue-100"> / 월</span>
           </p>
           <p className="mt-2 text-sm text-blue-100">
-            사진 분석, 위험성 평가, 안전보건계획서, 관리비 계획서, AI 결과 저장소 포함
+            사진 분석, 위험성 평가, 안전보건계획서, 관리비 계획서 이용
+            <span className="mt-1 block text-xs text-blue-200/95">
+              AI 결과 저장소는 구독 없이도 이용할 수 있습니다.
+            </span>
           </p>
         </div>
 
@@ -82,14 +86,14 @@ export default function SubscriptionPage() {
 
         <div className="space-y-3 rounded-xl border border-slate-100 bg-slate-50/80 p-4 text-sm text-slate-600">
           <p className="font-bold text-slate-800">진행 순서 (모의)</p>
-          <ol className="list-decimal space-y-1 pl-5">
+          <ol className="mx-auto inline-block list-decimal space-y-1 pl-5 text-left">
             <li>요금 및 혜택 확인</li>
             <li>결제 정보 입력 단계 (PG 연동 예정 — 현재는 생략)</li>
             <li>결제 승인 시뮬레이션 후 구독 활성화</li>
           </ol>
         </div>
 
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-end">
+        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
             href="/"
             className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-600 transition hover:bg-slate-50"
@@ -133,14 +137,15 @@ export default function SubscriptionPage() {
           <div
             role="dialog"
             aria-modal="true"
-            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
+            className="w-full max-w-md rounded-2xl bg-white p-6 text-center shadow-2xl sm:p-8"
           >
             <h2 className="text-lg font-black text-slate-900">구독 확인</h2>
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="mt-3 text-sm leading-relaxed text-slate-600">
               월 <strong>{SUBSCRIPTION_PLAN_AMOUNT_WON.toLocaleString('ko-KR')}원</strong>이 청구되는 구독입니다.
+              <br />
               실제 결제(PG)는 추후 연동 예정이며, 지금은 확인 후 바로 구독이 활성화됩니다.
             </p>
-            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <div className="mt-8 flex flex-col-reverse items-stretch justify-center gap-3 sm:flex-row sm:items-center sm:justify-center">
               <button
                 type="button"
                 className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50"
@@ -150,7 +155,7 @@ export default function SubscriptionPage() {
               </button>
               <button
                 type="button"
-                className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
+                className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-200 hover:bg-blue-700"
                 onClick={runSubscribeFlow}
               >
                 결제 진행 (모의)
@@ -169,7 +174,7 @@ export default function SubscriptionPage() {
 
       {step === 'error' && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/40 p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl">
             <p className="text-sm font-bold text-slate-900">처리 실패</p>
             <p className="mt-2 text-sm text-slate-600">{error}</p>
             <button
