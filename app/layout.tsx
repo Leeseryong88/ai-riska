@@ -8,6 +8,22 @@ import AuthGuard from '@/components/navigation/AuthGuard';
 
 const inter = Inter({ subsets: ['latin'] });
 
+/** 로컬 dev에서 metadataBase가 프로덕션 도메인이면 아이콘/OG용 내부 fetch가 원격 HTML을 받아 이미지 최적화가 실패함 */
+function resolveMetadataBase(): URL {
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    return new URL(process.env.NEXT_PUBLIC_SITE_URL);
+  }
+  if (process.env.VERCEL_URL) {
+    return new URL(`https://${process.env.VERCEL_URL}`);
+  }
+  if (process.env.NODE_ENV !== 'production') {
+    return new URL('http://localhost:3000');
+  }
+  return new URL('https://www.ai-riska.com');
+}
+
+const metadataBase = resolveMetadataBase();
+
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
@@ -16,7 +32,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://www.ai-riska.com'),
+  metadataBase,
   title: '모두의 안전 | 컨설팅·양식 검색 없이 우리 회사 맞춤 안전 서류',
   description:
     '비싼 컨설팅이나 인터넷 샘플 찾기 대신, 모두의 안전에서 우리 사업장 정보로 안전보건계획서·위험성평가·일지·허가 초안을 직접 만드세요.',

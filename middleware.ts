@@ -20,5 +20,8 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|login).*)'],
+  // 정적 자산·파비콘·아이콘은 미들웨어 제외 (불필요한 Edge 실행 및 이슈 방지)
+  matcher: [
+    '/((?!api|_next/static|_next/image|favicon\\.ico|icon\\.png|landing-hero\\.png|og-image\\.png|ads\\.txt|login).*)',
+  ],
 };
