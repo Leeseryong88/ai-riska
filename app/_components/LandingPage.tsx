@@ -177,7 +177,7 @@ export default function LandingPage() {
             transition={{ duration: 0.4 }}
             className="mb-8 sm:mb-12"
           >
-            <h1 className="text-3xl font-black leading-snug tracking-tight sm:text-4xl lg:text-5xl">
+            <h1 className="text-3xl font-black leading-snug tracking-tight break-keep sm:text-4xl lg:text-5xl">
               <span className="block bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                 클릭 한번으로 안전관리 서류를 직접 만드세요
               </span>
@@ -196,19 +196,19 @@ export default function LandingPage() {
               decoding="async"
               fetchPriority="high"
             />
-            {/* CTA: 히어로 이미지 하단 중앙 오버레이 */}
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex justify-center bg-gradient-to-t from-slate-900/35 via-slate-900/10 to-transparent px-3 pb-4 pt-10 sm:px-4 sm:pb-5 sm:pt-14">
+            {/* CTA: 히어로 이미지 하단 중앙 오버레이 (모바일에서는 이미지 하단 배치, 데스크탑은 오버레이) */}
+            <div className="pointer-events-none relative z-10 flex justify-center px-3 py-6 sm:absolute sm:inset-x-0 sm:bottom-0 sm:bg-gradient-to-t sm:from-slate-900/35 sm:via-slate-900/10 sm:to-transparent sm:px-4 sm:pb-5 sm:pt-14">
               <div className="pointer-events-auto flex w-full max-w-xl flex-col items-stretch gap-2.5 sm:flex-row sm:items-center sm:justify-center sm:gap-3">
                 <Link
                   href="/login"
-                  className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-3.5 text-sm font-black text-white shadow-xl shadow-blue-900/30 transition hover:bg-blue-700 sm:px-8 sm:py-4 sm:text-base"
+                  className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-3.5 text-sm font-black text-white shadow-xl shadow-blue-900/20 transition hover:bg-blue-700 sm:px-8 sm:py-4 sm:text-base sm:shadow-blue-900/30"
                 >
                   무료로 시작하기
                   <ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5 sm:h-5 sm:w-5" />
                 </Link>
                   <a
                     href="#services-grid"
-                    className="inline-flex items-center justify-center rounded-2xl border border-white/90 bg-white/95 px-6 py-3.5 text-sm font-black text-slate-800 shadow-sm backdrop-blur-sm transition hover:bg-white sm:px-8 sm:py-4 sm:text-base"
+                    className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white/95 px-6 py-3.5 text-sm font-black text-slate-800 shadow-sm backdrop-blur-sm transition hover:bg-white sm:border-white/90 sm:px-8 sm:py-4 sm:text-base"
                   >
                     어떤 서류가 되나요
                   </a>
@@ -223,8 +223,8 @@ export default function LandingPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, delay: 0.05 }}
           >
-            <div className="mx-auto mt-0 flex w-full justify-center overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              <p className="whitespace-nowrap px-2 text-base font-medium text-slate-600 sm:text-lg">
+            <div className="mx-auto mt-0 flex w-full justify-center px-4">
+              <p className="max-w-3xl text-base font-medium leading-relaxed text-slate-600 break-keep sm:text-lg">
                 외주 컨설팅 대신, AI와 실무 도구로 우리 정보에 맞는 계획서·평가·일지·허가 초안을 만듭니다.
               </p>
             </div>
