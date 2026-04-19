@@ -33,11 +33,12 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase,
-  title: '모두의 안전 | 컨설팅·양식 검색 없이 우리 회사 맞춤 안전 서류',
+  title:
+    '모두의 안전 | 위험성평가·안전보건계획서·안전관리 문서 AI — 안전관리자·중소기업',
   description:
-    '비싼 컨설팅이나 인터넷 샘플 찾기 대신, 모두의 안전에서 우리 사업장 정보로 안전보건계획서·위험성평가·일지·허가 초안을 직접 만드세요.',
+    '위험성평가표·안전보건계획서·작업허가·안전일지 등 안전관리 문서를 AI로 맞춤 생성합니다. 안전관리자와 중소기업을 위해 양식 샘플 검색 없이 사업장에 맞는 초안을 빠르게 만드세요.',
   keywords:
-    '모두의 안전, 안전관리, 초보 안전관리자, 안전담당자, 중소기업 안전관리, 위험성평가, 안전보건계획서, 작업허가서, 일일 안전일지, AI 안전, 현장 안전관리, 산업안전, 안전 문서 자동화, 현장 점검',
+    '위험성평가, 위험성평가표, 위험성평가 작성, 안전관리, 안전관리자, 안전담당자, 안전보건계획서, 안전보건교육, 산업안전보건, 중소기업 안전관리, 작업허가서, 일일안전일지, 현장 안전관리, 안전 문서, AI 안전, 모두의 안전',
   authors: [{ name: '모두의 안전' }],
   icons: {
     icon: '/icon.png',
@@ -45,9 +46,8 @@ export const metadata: Metadata = {
     apple: '/icon.png',
   },
   openGraph: {
-    title: '모두의 안전 | 우리 회사에 맞는 안전 서류를 직접',
-    description:
-      '컨설팅 비용·남의 양식 복사 대신 AI와 실무 도구로 계획서·위험성평가·현장 기록을 맞춤 작성하세요.',
+    title: '모두의 안전 | 안전관리계획서, 위험성평가표 생성 AI',
+    description: '양식 샘플 찾지 말고 AI로 맞춤 생성하세요.',
     url: 'https://modu-safe.com/',
     siteName: '모두의 안전',
     images: [
@@ -63,9 +63,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: '모두의 안전 | 샘플 찾지 말고 맞춤 서류',
-    description:
-      '안전보건계획서 양식·위험성평가 샘플 검색 대신, 우리 회사 조건에 맞는 문서 초안을 바로 만드세요.',
+    title: '모두의 안전 | 안전관리계획서, 위험성평가표 생성 AI',
+    description: '양식 샘플 찾지 말고 AI로 맞춤 생성하세요.',
     images: ['/og-image.png'],
   },
   robots: {
