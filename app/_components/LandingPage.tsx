@@ -196,8 +196,8 @@ export default function LandingPage() {
               decoding="async"
               fetchPriority="high"
             />
-            {/* CTA: 히어로 이미지 하단 중앙 오버레이 (모바일에서는 이미지 하단 배치, 데스크탑은 오버레이) */}
-            <div className="pointer-events-none relative z-10 flex justify-center px-3 py-6 sm:absolute sm:inset-x-0 sm:bottom-0 sm:bg-gradient-to-t sm:from-slate-900/35 sm:via-slate-900/10 sm:to-transparent sm:px-4 sm:pb-5 sm:pt-14">
+            {/* CTA: 데스크탑·태블릿만 표시 (모바일은 숨김) */}
+            <div className="hidden md:pointer-events-none md:z-10 md:flex md:justify-center md:px-3 md:py-6 sm:absolute sm:inset-x-0 sm:bottom-0 sm:bg-gradient-to-t sm:from-slate-900/35 sm:via-slate-900/10 sm:to-transparent sm:px-4 sm:pb-5 sm:pt-14">
               <div className="pointer-events-auto flex w-full max-w-xl flex-col items-stretch gap-2.5 sm:flex-row sm:items-center sm:justify-center sm:gap-3">
                 <Link
                   href="/login"
