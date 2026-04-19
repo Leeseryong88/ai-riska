@@ -175,6 +175,7 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
+            className="mb-8 sm:mb-12"
           >
             <h1 className="text-3xl font-black leading-snug tracking-tight sm:text-4xl lg:text-5xl">
               <span className="block bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
@@ -216,7 +217,7 @@ export default function LandingPage() {
           </motion.div>
         </div>
 
-        <div className="mx-auto mt-10 max-w-6xl px-4 text-center sm:mt-12 sm:px-6 lg:px-8">
+        <div className="mx-auto mt-6 max-w-6xl px-4 text-center sm:mt-8 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
