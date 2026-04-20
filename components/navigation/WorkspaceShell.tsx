@@ -209,9 +209,10 @@ export default function WorkspaceShell({
                 fallback={
                   <ShellServiceLinksFallback
                     filterIds={[
-                      'work-permit',
                       'safety-manager-todo',
                       'safety-log',
+                      'meeting-minutes',
+                      'work-permit',
                       'contractor-partners',
                       'worker-feedback',
                     ]}
@@ -221,9 +222,10 @@ export default function WorkspaceShell({
               >
                 <ShellServiceLinks
                   filterIds={[
-                    'work-permit',
                     'safety-manager-todo',
                     'safety-log',
+                    'meeting-minutes',
+                    'work-permit',
                     'contractor-partners',
                     'worker-feedback',
                   ]}

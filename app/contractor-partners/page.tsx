@@ -190,7 +190,11 @@ function ContractorPartnersContent() {
         setEvaluationCriteria(criteria);
         setEvaluationThreshold(threshold);
       } catch (e) {
-        console.error(e);
+        // 아직 평가 기준 문서가 없거나 권한 규칙이 배포되기 전 단계에서
+        // permission-denied 가 발생할 수 있으므로 기본값으로 폴백한다.
+        console.warn('[contractor-partners] 평가 기준 로드 실패, 기본값 사용:', e);
+        setEvaluationCriteria(DEFAULT_EVALUATION_CRITERIA);
+        setEvaluationThreshold(EVALUATION_THRESHOLD);
       }
     };
     loadCriteria();

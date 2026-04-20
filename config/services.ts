@@ -16,6 +16,7 @@ export type ServiceIcon =
   | 'healthPlan'
   | 'checklist'
   | 'storage'
+  | 'meeting'
   | 'contact';
 
 export interface ServiceDefinition {
@@ -160,6 +161,21 @@ export const services: ServiceDefinition[] = [
     featured: true,
     accent: { from: 'from-blue-600', to: 'to-cyan-600' },
     highlights: ['일일 기록', '점검 이력', '수정 가능'],
+  },
+  {
+    id: 'meeting-minutes',
+    title: '회의록 관리',
+    shortTitle: '회의록',
+    description: '산업안전보건위원회, 협력업체 협의체회의 등 법정 회의록을 주기별로 기록·관리합니다.',
+    href: '/meeting-minutes',
+    category: 'document',
+    status: 'stable',
+    icon: 'meeting',
+    mobilePriority: 'medium',
+    desktopMode: 'workspace',
+    featured: true,
+    accent: { from: 'from-fuchsia-500', to: 'to-purple-600' },
+    highlights: ['분기·월별 주기 관리', '양식 인쇄', '파일 업로드'],
   },
   {
     id: 'work-permit',

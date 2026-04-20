@@ -121,6 +121,16 @@ export default function ServiceGlyph({ icon, className = 'h-5 w-5' }: ServiceGly
         </svg>
       );
 
+    case 'meeting':
+      /* 회의록: 원탁 회의(사람들+중앙 문서) */
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+          <circle {...stroke} cx="12" cy="12" r="3.5" />
+          <path {...stroke} d="M12 4v2M12 18v2M4 12h2M18 12h2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M6.3 17.7l1.4-1.4M16.3 7.7l1.4-1.4" />
+          <path {...stroke} d="M10.5 11.5h3M10.5 13h3" />
+        </svg>
+      );
+
     case 'storage':
       /* 저장소: 아카이브 박스 */
       return (

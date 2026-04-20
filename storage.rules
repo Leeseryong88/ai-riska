@@ -36,5 +36,9 @@ service firebase.storage {
     match /contractor-partners/{userId}/{allPaths=**} {
       allow read, write: if isAuthenticated() && request.auth.uid == userId;
     }
+
+    match /meeting-minutes/{userId}/{allPaths=**} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+    }
   }
 }

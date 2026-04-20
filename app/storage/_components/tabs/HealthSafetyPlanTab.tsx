@@ -228,12 +228,13 @@ export function HealthSafetyPlanTab() {
       ) : (
         <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
           <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-200 text-xs font-black text-gray-500 uppercase tracking-wider">
-            <div className="col-span-8">제목</div>
+            <div className="col-span-1 text-center">번호</div>
+            <div className="col-span-7">제목</div>
             <div className="col-span-3 text-center">생성일</div>
             <div className="col-span-1 text-center">작업</div>
           </div>
           <div className="divide-y divide-gray-100">
-            {items.map((item) => (
+            {items.map((item, index) => (
               <motion.div
                 layout
                 key={item.id}
@@ -242,8 +243,14 @@ export function HealthSafetyPlanTab() {
                 onClick={() => setSelectedItem(item)}
                 className="grid grid-cols-1 md:grid-cols-12 gap-4 px-6 py-4 hover:bg-amber-50/30 transition-all cursor-pointer items-center"
               >
-                <div className="col-span-1 md:col-span-8 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
+                <div className="hidden md:flex md:col-span-1 items-center justify-center">
+                  <span className="text-sm font-black text-amber-600">{index + 1}</span>
+                </div>
+                <div className="col-span-1 md:col-span-7 flex items-center gap-3">
+                  <div className="md:hidden w-8 h-8 shrink-0 rounded-lg bg-amber-100 flex items-center justify-center">
+                    <span className="text-xs font-black text-amber-600">{index + 1}</span>
+                  </div>
+                  <div className="hidden md:flex w-10 h-10 rounded-lg bg-emerald-100 items-center justify-center shrink-0">
                     <FileText className="w-5 h-5 text-emerald-600" />
                   </div>
                   <div>
