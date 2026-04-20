@@ -251,13 +251,13 @@ export default function WorkspaceShell({
               <Suspense
                 fallback={
                   <ShellServiceLinksFallback
-                    filterIds={['camera', 'assessment', 'health-safety-plan', 'safety-management-fee']}
+                    filterIds={['camera', 'assessment', 'health-safety-plan', 'safety-management-fee', 'safety-checklist']}
                     serviceHref={serviceHref}
                   />
                 }
               >
                 <ShellServiceLinks
-                  filterIds={['camera', 'assessment', 'health-safety-plan', 'safety-management-fee']}
+                  filterIds={['camera', 'assessment', 'health-safety-plan', 'safety-management-fee', 'safety-checklist']}
                   serviceHref={serviceHref}
                 />
               </Suspense>

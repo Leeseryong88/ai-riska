@@ -2,11 +2,12 @@
 
 import React, { Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Camera, ShieldAlert, FileText, Calculator } from 'lucide-react';
+import { Camera, ShieldAlert, FileText, Calculator, ListChecks } from 'lucide-react';
 import { PhotoAnalysisTab } from './_components/tabs/PhotoAnalysisTab';
 import { RiskAssessmentTab } from './_components/tabs/RiskAssessmentTab';
 import { HealthSafetyPlanTab } from './_components/tabs/HealthSafetyPlanTab';
 import { ManagementFeePlanTab } from './_components/tabs/ManagementFeePlanTab';
+import { SafetyChecklistTab } from '@/app/storage/_components/tabs/SafetyChecklistTab';
 import { cn } from '@/app/work-permit/_lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import WorkspaceShell from '@/components/navigation/WorkspaceShell';
@@ -21,6 +22,7 @@ function StorageContent() {
     { id: 'assessment', name: '위험성평가', icon: ShieldAlert },
     { id: 'hsp', name: '안전보건계획서', icon: FileText },
     { id: 'mfp', name: '관리비 계획서', icon: Calculator },
+    { id: 'checklist', name: '점검 체크리스트', icon: ListChecks },
   ];
 
   const handleTabChange = (tabId: string) => {
@@ -77,6 +79,7 @@ function StorageContent() {
               {activeTab === 'assessment' && <RiskAssessmentTab />}
               {activeTab === 'hsp' && <HealthSafetyPlanTab />}
               {activeTab === 'mfp' && <ManagementFeePlanTab />}
+              {activeTab === 'checklist' && <SafetyChecklistTab />}
             </motion.div>
           </AnimatePresence>
         </div>

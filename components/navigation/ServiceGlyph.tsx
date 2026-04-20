@@ -110,6 +110,17 @@ export default function ServiceGlyph({ icon, className = 'h-5 w-5' }: ServiceGly
         </svg>
       );
 
+    case 'checklist':
+      /* 점검 체크리스트: 체크 표시가 여러개 있는 문서 */
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+          <path {...stroke} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
+          <path {...stroke} d="M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          <path {...stroke} d="M8 11l1.5 1.5L13 9M8 16l1.5 1.5L13 14" />
+          <path {...stroke} d="M16 12h.5M16 17h.5" />
+        </svg>
+      );
+
     case 'storage':
       /* 저장소: 아카이브 박스 */
       return (

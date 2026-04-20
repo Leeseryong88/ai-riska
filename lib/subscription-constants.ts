@@ -4,6 +4,7 @@ export const AI_SERVICE_PATH_PREFIXES = [
   '/assessment',
   '/health-safety-plan',
   '/safety-management-fee',
+  '/safety-checklist',
 ] as const;
 
 export const SUBSCRIPTION_PLAN_AMOUNT_WON = 28900;
