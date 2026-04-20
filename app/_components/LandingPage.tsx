@@ -31,7 +31,7 @@ const serviceGroups = [
     eyebrow: 'AI Services',
     title: 'AI 분석·문서 초안',
     tagline: '인터넷 샘플이 아니라, 입력한 내용을 바탕으로 위험성평가·계획서 초안을 만듭니다.',
-    serviceIds: ['camera', 'assessment', 'health-safety-plan', 'safety-management-fee', 'storage'],
+    serviceIds: ['camera', 'assessment', 'health-safety-plan', 'safety-management-fee', 'safety-checklist'],
     surfaceClass: 'from-blue-50 via-white to-cyan-50',
     borderClass: 'border-blue-100',
     badgeClass: 'bg-blue-100 text-blue-700',

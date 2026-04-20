@@ -105,7 +105,7 @@ export const services: ServiceDefinition[] = [
     id: 'safety-checklist',
     title: '안전점검 체크리스트',
     shortTitle: '점검 체크리스트',
-    description: '점검 정보와 항목을 선택하면 한 장짜리 맞춤형 안전점검 체크리스트를 자동 생성합니다.',
+    description: '점검 정보와 항목을 선택하면 맞춤형 안전점검 체크리스트를 자동 생성합니다.',
     href: '/safety-checklist',
     category: 'analysis',
     status: 'stable',

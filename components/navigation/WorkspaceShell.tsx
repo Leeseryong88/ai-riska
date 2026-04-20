@@ -168,7 +168,7 @@ export default function WorkspaceShell({
       <div className="flex h-screen overflow-hidden">
         {/* Fixed Left Sidebar */}
         <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-white lg:block">
-          <div className="flex h-full flex-col p-4">
+          <div className="flex h-full min-h-0 flex-col p-4">
             <Link
               href="/"
               className="mb-5 flex min-w-0 items-center gap-2.5 px-2 sm:gap-3"
@@ -186,7 +186,7 @@ export default function WorkspaceShell({
               </span>
             </Link>
 
-            <nav className="flex-1 space-y-1">
+            <nav className="flex-1 min-h-0 space-y-1 overflow-y-auto pr-1">
               <p className="mb-2 px-3 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 bg-slate-50/50 py-1 rounded-md w-fit">
                 Main Menu
               </p>

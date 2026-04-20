@@ -477,7 +477,7 @@ export default function SafetyChecklistPage() {
     <WorkspaceShell
       serviceHref="/safety-checklist"
       title="안전점검 체크리스트"
-      description="5W1H 정보를 선택하면 형식·문항 수에 맞춘 맞춤형 체크리스트를 한 장으로 생성합니다."
+      description="5W1H 정보를 선택하면 형식·문항 수에 맞춘 맞춤형 체크리스트를 생성합니다."
     >
       <div className="mx-auto max-w-2xl px-4 py-8 text-center">
         {!isGenerating ? (

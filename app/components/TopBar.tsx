@@ -24,6 +24,13 @@ export default function TopBar({ onOpenContact }: TopBarProps) {
   const search = searchParams.toString();
   const hrefForService = `${pathname}${search ? `?${search}` : ''}`;
   const currentService = getServiceByHref(hrefForService);
+  const closeMobileMenuOnNavigate =
+    (targetHref: string) => (event: React.MouseEvent<HTMLAnchorElement>) => {
+      if (hrefForService === targetHref) {
+        event.preventDefault();
+      }
+      setIsMobileMenuOpen(false);
+    };
 
   const handleLogout = async () => {
     try {
@@ -230,6 +237,7 @@ export default function TopBar({ onOpenContact }: TopBarProps) {
                 </p>
                 <Link
                   href="/"
+                  onClick={closeMobileMenuOnNavigate('/')}
                   className={`flex items-center gap-3 rounded-2xl px-4 py-3.5 text-base font-bold transition-all ${
                     pathname === '/'
                       ? 'bg-blue-600 text-white shadow-lg shadow-blue-100'
@@ -242,7 +250,7 @@ export default function TopBar({ onOpenContact }: TopBarProps) {
                 {user && (
                   <Link
                     href="/subscription"
-                    onClick={() => setIsMobileMenuOpen(false)}
+                    onClick={closeMobileMenuOnNavigate('/subscription')}
                     className={`mt-1 flex items-center gap-3 rounded-2xl px-4 py-3.5 text-base font-bold transition-all ${
                       pathname === '/subscription'
                         ? 'bg-blue-600 text-white shadow-lg shadow-blue-100'
@@ -255,7 +263,7 @@ export default function TopBar({ onOpenContact }: TopBarProps) {
                 {user && isAdminUid(user.uid) && (
                   <Link
                     href="/admin"
-                    onClick={() => setIsMobileMenuOpen(false)}
+                    onClick={closeMobileMenuOnNavigate('/admin')}
                     className={`mt-1 flex items-center gap-3 rounded-2xl px-4 py-3.5 text-base font-bold transition-all ${
                       pathname === '/admin'
                         ? 'bg-slate-900 text-white shadow-lg shadow-slate-200'
@@ -288,6 +296,7 @@ export default function TopBar({ onOpenContact }: TopBarProps) {
                         <Link
                           key={service.id}
                           href={service.href}
+                          onClick={closeMobileMenuOnNavigate(service.href)}
                           className={`flex items-center gap-3 rounded-2xl px-4 py-3.5 text-base font-bold transition-all ${
                             isActive
                               ? 'bg-blue-50 text-blue-700'
@@ -314,7 +323,7 @@ export default function TopBar({ onOpenContact }: TopBarProps) {
                         ? 'bg-blue-600 text-white shadow-lg shadow-blue-100'
                         : 'text-slate-400 bg-slate-50 hover:text-slate-600'
                     }`}
-                    onClick={() => setIsMobileMenuOpen(false)}
+                    onClick={closeMobileMenuOnNavigate('/storage')}
                     aria-label="저장소"
                   >
                     <ServiceGlyph icon="storage" className="h-4.5 w-4.5" />
@@ -322,13 +331,14 @@ export default function TopBar({ onOpenContact }: TopBarProps) {
                 </div>
                 <div className="space-y-1">
                   {services
-                    .filter((service) => ['camera', 'assessment', 'health-safety-plan', 'safety-management-fee'].includes(service.id))
+                    .filter((service) => ['camera', 'assessment', 'health-safety-plan', 'safety-management-fee', 'safety-checklist'].includes(service.id))
                     .map((service) => {
                       const isActive = isServiceActive(service, pathname, search);
                       return (
                         <Link
                           key={service.id}
                           href={service.href}
+                          onClick={closeMobileMenuOnNavigate(service.href)}
                           className={`flex items-center gap-3 rounded-2xl px-4 py-3.5 text-base font-bold transition-all ${
                             isActive
                               ? 'bg-blue-50 text-blue-700'
