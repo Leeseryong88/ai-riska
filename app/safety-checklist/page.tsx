@@ -8,6 +8,7 @@ import { apiAuthHeaders } from '@/lib/api-client';
 import { db } from '@/app/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Save, Printer } from 'lucide-react';
+import AIDisclaimer from '@/components/common/AIDisclaimer';
 
 type SubStep = 'disclaimer' | 'when' | 'where' | 'who' | 'what' | 'how' | 'count' | 'format';
 
@@ -483,47 +484,12 @@ export default function SafetyChecklistPage() {
         {!isGenerating ? (
           <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
             {subStep === 'disclaimer' && (
-              <div className="text-left">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center text-amber-600">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                  </div>
-                  <h2 className="text-2xl font-bold text-gray-800">서비스 이용 전 유의사항</h2>
-                </div>
-
-                <div className="bg-amber-50 border border-amber-100 rounded-xl p-6 mb-8 text-amber-900 leading-relaxed text-sm md:text-base">
-                  <p className="mb-4 font-bold text-lg">⚠️ 필독: 인공지능(AI) 생성물 이용 관련 안내</p>
-                  <p className="mb-3">
-                    본 서비스는 AI 기술을 활용하여 <strong>안전점검 체크리스트 초안을 생성하는 보조 도구</strong>입니다.
-                  </p>
-                  <p className="mb-3">
-                    AI가 생성한 체크리스트는 일반적인 가이드라인이며, <strong>실제 현장 조건·법적 요구사항을 완벽하게 반영하지 못할 수 있습니다.</strong>
-                  </p>
-                  <p className="mb-3">
-                    따라서, 본 서비스로 생성된 결과물을 실제 업무에 활용하거나 외부 기관에 제출함에 있어 발생하는 <strong>모든 책임은 사용자 본인에게 있음</strong>을 알려드립니다.
-                  </p>
-                  <p className="font-semibold text-amber-700">
-                    반드시 전문가의 검토를 거쳐 실제 상황에 맞게 수정 및 보완하여 사용하시기 바랍니다.
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  <button
-                    onClick={() => { setSubStep(STEPS[0].id); setStepIndex(0); }}
-                    className="w-full py-4 bg-rose-600 text-white font-bold rounded-xl hover:bg-rose-700 shadow-lg shadow-rose-200 transition-all text-lg"
-                  >
-                    위 내용을 확인했으며, 이에 동의합니다
-                  </button>
-                  <button
-                    onClick={() => router.push('/')}
-                    className="w-full py-4 bg-gray-100 text-gray-500 font-bold rounded-xl hover:bg-gray-200 transition-all"
-                  >
-                    동의하지 않음 (메인으로 이동)
-                  </button>
-                </div>
-              </div>
+              <AIDisclaimer
+                serviceName="안전점검 체크리스트"
+                accentColor="blue"
+                onAgree={() => { setSubStep(STEPS[0].id); setStepIndex(0); }}
+                standalone={false}
+              />
             )}
 
             {subStep !== 'disclaimer' && (

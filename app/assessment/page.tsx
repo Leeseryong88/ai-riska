@@ -12,6 +12,7 @@ import { useAuth } from '@/app/context/AuthContext';
 import { apiAuthHeaders } from '@/lib/api-client';
 import { db } from '@/app/lib/firebase';
 import { collection, addDoc, serverTimestamp, getDocs, query, where, orderBy, deleteDoc, doc } from 'firebase/firestore';
+import AIDisclaimer from '@/components/common/AIDisclaimer';
 
 // 분석 항목 인터페이스 정의
 interface AnalysisItem {
@@ -178,6 +179,7 @@ function ClientSideContent() {
   
   // 신규 추가: 시작 메뉴 및 텍스트 기반 생성 관련 상태
   const [showInitialMenu, setShowInitialMenu] = useState(true);
+  const [showDisclaimer, setShowDisclaimer] = useState(true);
   const [generationType, setGenerationType] = useState<'photo' | 'text' | null>(null);
   const [textProcesses, setTextProcesses] = useState<string[]>(['']);
   const [currentTextProcessIndex, setCurrentTextProcessIndex] = useState(0);
@@ -1277,6 +1279,22 @@ function ClientSideContent() {
       window.removeEventListener('resize', checkIfMobile);
     };
   }, []);
+
+  if (showDisclaimer) {
+    return (
+      <WorkspaceShell
+        serviceHref="/assessment"
+        title="스마트 위험성 평가"
+        description="사진과 텍스트를 기반으로 위험 요인을 분석하고, 체계적인 위험성평가표를 즉시 생성합니다."
+      >
+        <AIDisclaimer
+          serviceName="위험성평가표"
+          accentColor="blue"
+          onAgree={() => setShowDisclaimer(false)}
+        />
+      </WorkspaceShell>
+    );
+  }
 
   return (
     <WorkspaceShell

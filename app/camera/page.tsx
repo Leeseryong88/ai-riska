@@ -11,6 +11,7 @@ import { db, storage } from '@/app/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Save } from 'lucide-react';
+import AIDisclaimer from '@/components/common/AIDisclaimer';
 
 interface Analysis {
   risk_factors: string[];
@@ -47,6 +48,7 @@ function ClientSideCamera() {
   const [saveTitle, setSaveTitle] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [showReanalyzeDialog, setShowReanalyzeDialog] = useState(false);
+  const [showDisclaimer, setShowDisclaimer] = useState(true);
 
   const handleCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -540,6 +542,22 @@ function ClientSideCamera() {
       // 필요한 경우 클린업 로직 추가
     };
   }, [pathname, searchParams]);
+
+  if (showDisclaimer) {
+    return (
+      <WorkspaceShell
+        serviceHref="/camera"
+        title="실시간 사진 위험 분석"
+        description="사진을 즉시 분석하여 위험요인을 찾습니다."
+      >
+        <AIDisclaimer
+          serviceName="사진 위험 분석 결과"
+          accentColor="blue"
+          onAgree={() => setShowDisclaimer(false)}
+        />
+      </WorkspaceShell>
+    );
+  }
 
   return (
     <>

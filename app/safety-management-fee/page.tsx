@@ -7,6 +7,7 @@ import { useAuth } from '@/app/context/AuthContext';
 import { db } from '@/app/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Save } from 'lucide-react';
+import AIDisclaimer from '@/components/common/AIDisclaimer';
 
 const CONSTRUCTION_TYPES = [
   { id: 'type1', title: '일반건설(갑)', desc: '아파트, 상가, 공장 등 일반적인 모든 건축물 신축/증축 공사' },
@@ -610,22 +611,12 @@ export default function SafetyManagementFeePage() {
         {!isGenerating ? (
           <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
             {subStep === 'disclaimer' && (
-              <div className="text-left">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <h2 className="text-2xl font-bold text-gray-800">관리비 사용계획서 자동 작성</h2>
-                </div>
-                <div className="bg-blue-50 border border-blue-100 rounded-xl p-6 mb-8 text-blue-900 leading-relaxed text-sm md:text-base">
-                  <p className="mb-4 font-bold text-lg">👷 본 서비스는 예시 작성을 보조합니다</p>
-                  <p className="mb-3">입력하신 최소한의 정보를 바탕으로 산업안전보건법에 따른 <strong>합리적인 사용계획서 예시</strong>를 자동으로 구성해드립니다.</p>
-                  <p className="mb-3">생성된 내용은 참고용이며, 실제 상황과 시공 계획에 맞춰 반드시 수정 및 보완하여 사용하시기 바랍니다.</p>
-                </div>
-                <button onClick={() => setSubStep('mode')} className="w-full py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg transition-all text-lg">시작하기</button>
-              </div>
+              <AIDisclaimer
+                serviceName="안전보건관리비 사용계획서"
+                accentColor="blue"
+                onAgree={() => setSubStep('mode')}
+                standalone={false}
+              />
             )}
 
             {subStep === 'mode' && (
