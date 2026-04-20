@@ -282,14 +282,34 @@ export default function TopBar({ onOpenContact }: TopBarProps) {
                 <div className="space-y-1">
                   {services
                     .filter((service) =>
-                  [
-                    'work-permit',
-                    'safety-manager-todo',
-                    'safety-log',
-                    'contractor-partners',
-                    'worker-feedback',
-                  ].includes(service.id)
-                )
+                      [
+                        'safety-manager-todo',
+                        'safety-log',
+                        'meeting-minutes',
+                        'work-permit',
+                        'contractor-partners',
+                        'worker-feedback',
+                      ].includes(service.id)
+                    )
+                    .sort(
+                      (a, b) =>
+                        [
+                          'safety-manager-todo',
+                          'safety-log',
+                          'meeting-minutes',
+                          'work-permit',
+                          'contractor-partners',
+                          'worker-feedback',
+                        ].indexOf(a.id) -
+                        [
+                          'safety-manager-todo',
+                          'safety-log',
+                          'meeting-minutes',
+                          'work-permit',
+                          'contractor-partners',
+                          'worker-feedback',
+                        ].indexOf(b.id),
+                    )
                     .map((service) => {
                       const isActive = isServiceActive(service, pathname, search);
                       return (
