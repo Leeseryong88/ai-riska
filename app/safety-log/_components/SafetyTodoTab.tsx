@@ -233,6 +233,12 @@ export function SafetyTodoTab() {
     return list;
   }, [sorted, filter, selectedDayKey]);
 
+  const handleSelectDayFromCalendar = useCallback((dayKey: string | null) => {
+    setSelectedDayKey(dayKey);
+    // 좌측 달력 선택을 새 항목의 기한 입력과 동기화해 한 번에 설정 가능하게 함
+    setDraftDueDate(dayKey ?? '');
+  }, []);
+
   const addTodo = async () => {
     setAddHint(null);
     const title = input.trim();
@@ -425,7 +431,7 @@ export function SafetyTodoTab() {
           visibleMonth={visibleMonth}
           onVisibleMonthChange={setVisibleMonth}
           selectedDayKey={selectedDayKey}
-          onSelectDay={setSelectedDayKey}
+          onSelectDay={handleSelectDayFromCalendar}
           dueStatsByDay={dueStatsByDay}
         />
       </div>
