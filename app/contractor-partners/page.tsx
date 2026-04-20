@@ -20,6 +20,7 @@ import {
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Building2,
+  ClipboardCheck,
   ChevronLeft,
   Check,
   Loader2,
@@ -94,6 +95,24 @@ function ListDocCheckbox({ checked, label }: { checked: boolean; label: string }
   );
 }
 
+const EVALUATION_THRESHOLD = 80;
+interface EvaluationCriterion {
+  id: string;
+  label: string;
+  description: string;
+  maxScore: number;
+}
+
+type EvaluationScores = Record<string, number>;
+
+const DEFAULT_EVALUATION_CRITERIA: EvaluationCriterion[] = [
+  { id: 'safetyManagementSystem', label: '안전관리 체계', description: '안전관리자 지정, 역할·책임, 운영체계의 적정성', maxScore: 25 },
+  { id: 'documentReadiness', label: '필수 서류 준비도', description: '안전보건관리계획서·위험성평가 등 서류 완성도', maxScore: 20 },
+  { id: 'workerQualification', label: '인력 자격/경력', description: '투입 인력 자격증, 경력, 배치 적정성', maxScore: 20 },
+  { id: 'safetyEducation', label: '안전교육 이행 수준', description: '정기교육, 특별교육, 신규채용자 교육 이행성', maxScore: 15 },
+  { id: 'accidentHistoryAndImprovement', label: '사고이력/개선활동', description: '최근 사고이력, 재발방지 대책 및 개선 이행', maxScore: 20 },
+];
+
 function ContractorPartnersContent() {
   const { user } = useAuth();
   const [partners, setPartners] = useState<ContractorPartner[]>([]);
@@ -102,6 +121,20 @@ function ContractorPartnersContent() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [submitting, setSubmitting] = useState(false);
+  const [evaluationOpen, setEvaluationOpen] = useState(false);
+  const [evaluationSubmitting, setEvaluationSubmitting] = useState(false);
+  const [evaluatingPartner, setEvaluatingPartner] = useState<ContractorPartner | null>(null);
+  const [evaluationScores, setEvaluationScores] = useState<EvaluationScores>({});
+  const [evaluationComment, setEvaluationComment] = useState('');
+  const [criteriaOpen, setCriteriaOpen] = useState(false);
+  const [criteriaSubmitting, setCriteriaSubmitting] = useState(false);
+  const [evaluationCriteria, setEvaluationCriteria] = useState<EvaluationCriterion[]>(DEFAULT_EVALUATION_CRITERIA);
+  const [evaluationThreshold, setEvaluationThreshold] = useState(EVALUATION_THRESHOLD);
+  const [criteriaDraft, setCriteriaDraft] = useState<EvaluationCriterion[]>(DEFAULT_EVALUATION_CRITERIA);
+  const [thresholdDraft, setThresholdDraft] = useState(EVALUATION_THRESHOLD);
+
+  const criteriaTotal = evaluationCriteria.reduce((acc, item) => acc + item.maxScore, 0);
+  const criteriaDraftTotal = criteriaDraft.reduce((acc, item) => acc + item.maxScore, 0);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -126,6 +159,42 @@ function ContractorPartnersContent() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    const loadCriteria = async () => {
+      if (!user) return;
+      try {
+        const configRef = doc(db, 'contractor_partner_eval_criteria', user.uid);
+        const snap = await getDoc(configRef);
+        if (!snap.exists()) {
+          setEvaluationCriteria(DEFAULT_EVALUATION_CRITERIA);
+          setEvaluationThreshold(EVALUATION_THRESHOLD);
+          return;
+        }
+        const data = snap.data() as {
+          criteria?: EvaluationCriterion[];
+          thresholdScore?: number;
+        };
+        const criteria = Array.isArray(data.criteria) && data.criteria.length
+          ? data.criteria
+              .map((c) => ({
+                id: String(c.id || '').trim(),
+                label: String(c.label || '').trim(),
+                description: String(c.description || '').trim(),
+                maxScore: Math.max(1, Number(c.maxScore) || 0),
+              }))
+              .filter((c) => c.id && c.label)
+          : DEFAULT_EVALUATION_CRITERIA;
+        const maxTotal = criteria.reduce((acc, item) => acc + item.maxScore, 0);
+        const threshold = Math.min(maxTotal, Math.max(0, Number(data.thresholdScore) || EVALUATION_THRESHOLD));
+        setEvaluationCriteria(criteria);
+        setEvaluationThreshold(threshold);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    loadCriteria();
+  }, [user]);
 
   const onSubmitWizard = async (payload: {
     optionalEnabled: Record<OptionalDocKey, boolean>;
@@ -268,6 +337,135 @@ function ContractorPartnersContent() {
     setModalOpen(true);
   };
 
+  const openEvaluation = (partner: ContractorPartner) => {
+    const saved = partner.qualificationEvaluation;
+    setEvaluatingPartner(partner);
+    const nextScores: EvaluationScores = {};
+    for (const item of evaluationCriteria) {
+      const raw = saved?.scores?.[item.id];
+      nextScores[item.id] = Number.isFinite(raw) ? Math.max(0, Math.min(item.maxScore, Math.floor(Number(raw)))) : 0;
+    }
+    setEvaluationScores(nextScores);
+    setEvaluationComment(saved?.comment ?? '');
+    setEvaluationOpen(true);
+  };
+
+  const closeEvaluation = () => {
+    if (evaluationSubmitting) return;
+    setEvaluationOpen(false);
+    setEvaluatingPartner(null);
+  };
+
+  const totalScore = evaluationCriteria.reduce((acc, item) => acc + (evaluationScores[item.id] || 0), 0);
+  const isQualified = totalScore >= evaluationThreshold;
+
+  const handleScoreChange = (key: string, max: number, raw: string) => {
+    const num = Number(raw);
+    const safe = Number.isFinite(num) ? Math.max(0, Math.min(max, Math.floor(num))) : 0;
+    setEvaluationScores((prev) => ({ ...prev, [key]: safe }));
+  };
+
+  const openCriteriaModal = () => {
+    setCriteriaDraft(evaluationCriteria);
+    setThresholdDraft(evaluationThreshold);
+    setCriteriaOpen(true);
+  };
+
+  const addCriteriaRow = () => {
+    setCriteriaDraft((prev) => [
+      ...prev,
+      { id: `custom_${Date.now()}`, label: '', description: '', maxScore: 10 },
+    ]);
+  };
+
+  const removeCriteriaRow = (id: string) => {
+    setCriteriaDraft((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const updateCriteriaRow = (id: string, key: 'label' | 'description' | 'maxScore', value: string) => {
+    setCriteriaDraft((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        if (key === 'maxScore') {
+          const num = Number(value);
+          return { ...item, maxScore: Number.isFinite(num) ? Math.max(1, Math.floor(num)) : 1 };
+        }
+        return { ...item, [key]: value };
+      })
+    );
+  };
+
+  const saveCriteria = async () => {
+    if (!user) return;
+    const normalized = criteriaDraft
+      .map((item, idx) => ({
+        id: item.id?.trim() || `custom_${idx}_${Date.now()}`,
+        label: item.label.trim(),
+        description: item.description.trim(),
+        maxScore: Math.max(1, Math.floor(item.maxScore || 0)),
+      }))
+      .filter((item) => item.label);
+    if (!normalized.length) {
+      alert('평가 항목을 1개 이상 입력해 주세요.');
+      return;
+    }
+    const total = normalized.reduce((acc, item) => acc + item.maxScore, 0);
+    if (total !== 100) {
+      alert('총점이 100점이 아니면 100점 미만이나 초과일경우 총점을 100점으로 맞춰주세요');
+      return;
+    }
+    const threshold = Math.min(total, Math.max(0, Math.floor(thresholdDraft)));
+    setCriteriaSubmitting(true);
+    try {
+      await setDoc(doc(db, 'contractor_partner_eval_criteria', user.uid), {
+        managerId: user.uid,
+        criteria: normalized,
+        thresholdScore: threshold,
+        updatedAt: serverTimestamp(),
+      });
+      setEvaluationCriteria(normalized);
+      setEvaluationThreshold(threshold);
+      setCriteriaOpen(false);
+    } catch (e) {
+      console.error(e);
+      alert('평가 기준 저장 중 오류가 발생했습니다.');
+    } finally {
+      setCriteriaSubmitting(false);
+    }
+  };
+
+  const submitEvaluation = async () => {
+    if (!user || !evaluatingPartner) return;
+    setEvaluationSubmitting(true);
+    try {
+      await updateDoc(doc(db, 'contractor_partners', evaluatingPartner.id), {
+        qualificationEvaluation: {
+          totalScore,
+          thresholdScore: evaluationThreshold,
+          status: isQualified ? 'qualified' : 'unqualified',
+          comment: evaluationComment.trim(),
+          scores: evaluationScores,
+          criteriaSnapshot: evaluationCriteria,
+          evaluatedAt: serverTimestamp(),
+        },
+        updatedAt: serverTimestamp(),
+      });
+
+      const refreshed = await getDoc(doc(db, 'contractor_partners', evaluatingPartner.id));
+      if (refreshed.exists()) {
+        const refreshedPartner = { id: refreshed.id, ...refreshed.data() } as ContractorPartner;
+        if (selected?.id === refreshedPartner.id) setSelected(refreshedPartner);
+      }
+      await load();
+      closeEvaluation();
+    } catch (e) {
+      console.error(e);
+      alert('평가 저장 중 오류가 발생했습니다.');
+    } finally {
+      setEvaluationSubmitting(false);
+    }
+  };
+
   return (
     <WorkspaceShell
       serviceHref="/contractor-partners"
@@ -289,10 +487,16 @@ function ContractorPartnersContent() {
                   <Building2 className="h-3.5 w-3.5 text-blue-600" />
                   등록 {partners.length}곳
                 </div>
-                <Button size="sm" className="gap-1.5 text-sm" onClick={openCreate}>
-                  <Plus className="h-4 w-4" />
-                  협력업체 추가
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="outline" className="gap-1.5 text-sm" onClick={openCriteriaModal}>
+                    <ClipboardCheck className="h-4 w-4" />
+                    적격수급업체 기준 수립
+                  </Button>
+                  <Button size="sm" className="gap-1.5 text-sm" onClick={openCreate}>
+                    <Plus className="h-4 w-4" />
+                    협력업체 추가
+                  </Button>
+                </div>
               </div>
 
               {loading ? (
@@ -312,22 +516,24 @@ function ContractorPartnersContent() {
                     const riskOk = hasRequiredDocFile(p, 'riskAssessment');
                     const optSel = countOptionalCategoriesSelected(p);
                     const optDone = countOptionalCategoriesWithAttachment(p);
+                    const evaluation = p.qualificationEvaluation;
                     return (
                       <li key={p.id}>
-                        <button
-                          type="button"
+                        <div
+                          role="button"
+                          tabIndex={0}
                           onClick={() => setSelected(p)}
-                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left shadow-sm transition-all hover:border-blue-200 hover:shadow sm:px-4"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') setSelected(p);
+                          }}
+                          className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left shadow-sm transition-all hover:border-blue-200 hover:shadow sm:px-4"
                         >
                           <div className="flex flex-col gap-2 min-[520px]:flex-row min-[520px]:items-center min-[520px]:gap-3 lg:gap-5">
                             <div className="min-w-0 flex-1">
-                              <div className="flex items-start justify-between gap-2 min-[520px]:block">
+                              <div className="flex items-start justify-between gap-2">
                                 <p className="truncate text-sm font-black leading-tight text-slate-900 sm:text-base">
                                   {p.companyName}
                                 </p>
-                                <span className="shrink-0 text-[10px] font-bold text-slate-400 min-[520px]:hidden">
-                                  {formatTsShort(p.createdAt)}
-                                </span>
                               </div>
                               <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] font-medium text-slate-500">
                                 <span className="inline-flex items-center gap-0.5">
@@ -350,12 +556,37 @@ function ContractorPartnersContent() {
                               >
                                 기타 <span className="tabular-nums">({optDone}/{optSel})</span>
                               </span>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className="h-auto gap-1 px-2 py-1 text-[11px]"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openEvaluation(p);
+                                }}
+                              >
+                                <ClipboardCheck className="h-3 w-3" />
+                                적격수급업체 평가
+                              </Button>
+                              {evaluation && (
+                                <span
+                                  className={cn(
+                                    'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-black',
+                                    evaluation.status === 'qualified'
+                                      ? 'bg-emerald-100 text-emerald-700'
+                                      : 'bg-rose-100 text-rose-700'
+                                  )}
+                                >
+                                  {`평가완료(${evaluation.status === 'qualified' ? '적격' : '부적격'})`}
+                                </span>
+                              )}
                             </div>
                             <span className="hidden shrink-0 text-right text-[10px] font-bold leading-tight text-slate-400 min-[520px]:block lg:min-w-[7rem]">
                               {formatTs(p.createdAt)}
                             </span>
                           </div>
-                        </button>
+                        </div>
                       </li>
                     );
                   })}
@@ -406,8 +637,52 @@ function ContractorPartnersContent() {
                       </div>
                     </dl>
                   </div>
+                  {selected.qualificationEvaluation && (
+                    <div
+                      className={cn(
+                        'rounded-lg border px-3 py-2 text-sm font-bold',
+                        selected.qualificationEvaluation.status === 'qualified'
+                          ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                          : 'border-rose-200 bg-rose-50 text-rose-700'
+                      )}
+                    >
+                      {`평가완료(${selected.qualificationEvaluation.status === 'qualified' ? '적격' : '부적격'})`}
+                      <p className="mt-0.5 text-xs font-medium">
+                        총점 {selected.qualificationEvaluation.totalScore} / 100
+                      </p>
+                      <p className="mt-0.5 text-[11px] font-medium text-slate-500">
+                        평가일시: {formatTs(selected.qualificationEvaluation.evaluatedAt)}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
+
+              {selected.qualificationEvaluation && (
+                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 sm:p-5">
+                  <h3 className="text-xs font-black uppercase tracking-wide text-slate-900 sm:text-sm">적격수급업체 평가 결과</h3>
+                  <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+                    {(selected.qualificationEvaluation.criteriaSnapshot?.length
+                      ? selected.qualificationEvaluation.criteriaSnapshot
+                      : evaluationCriteria
+                    ).map((item) => (
+                      <li key={item.id} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                        <p className="font-bold text-slate-800">{item.label}</p>
+                        <p className="mt-0.5 text-xs text-slate-500">{item.description}</p>
+                        <p className="mt-1 text-xs font-black text-slate-700">
+                          {selected.qualificationEvaluation?.scores[item.id] ?? 0} / {item.maxScore}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2">
+                    <p className="text-xs font-bold text-slate-500">평가 의견</p>
+                    <p className="mt-1 whitespace-pre-wrap text-sm text-slate-800">
+                      {selected.qualificationEvaluation.comment || '의견 없음'}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div className="rounded-xl border border-amber-100 bg-amber-50/40 p-4 sm:p-5">
                 <h3 className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-amber-950 sm:text-sm">
@@ -502,6 +777,184 @@ function ContractorPartnersContent() {
         onClose={() => !submitting && setModalOpen(false)}
         onSubmit={onSubmitWizard}
       />
+
+      {evaluationOpen && evaluatingPartner && (
+        <div className="fixed inset-0 z-[210] flex items-center justify-center p-4">
+          <button
+            type="button"
+            className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+            aria-label="닫기"
+            onClick={closeEvaluation}
+          />
+          <div className="relative z-10 flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            <div className="border-b border-slate-100 px-5 py-4">
+              <h2 className="text-lg font-black text-slate-900">적격수급업체 평가</h2>
+              <p className="text-xs text-slate-500">
+                {evaluatingPartner.companyName} · 적격 기준 {evaluationThreshold}점 / {criteriaTotal}점
+              </p>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-5 py-4">
+              <ul className="space-y-3">
+                {evaluationCriteria.map((item) => (
+                  <li key={item.id} className="rounded-xl border border-slate-200 bg-slate-50/40 p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-black text-slate-800">{item.label}</p>
+                        <p className="text-xs text-slate-500">{item.description}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={0}
+                          max={item.maxScore}
+                          value={evaluationScores[item.id] ?? 0}
+                          onChange={(e) => handleScoreChange(item.id, item.maxScore, e.target.value)}
+                          className="w-24 rounded-md border border-slate-300 px-2 py-1 text-right text-sm font-bold"
+                        />
+                        <span className="text-xs font-bold text-slate-500">/ {item.maxScore}</span>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50/60 p-3">
+                <p className="text-sm font-black text-slate-900">자동 합산 점수</p>
+                <p className="mt-1 text-base font-black text-blue-700">
+                  {totalScore} / {criteriaTotal} · {isQualified ? '평가완료(적격)' : '평가완료(부적격)'}
+                </p>
+              </div>
+
+              <div className="mt-4">
+                <label className="text-sm font-bold text-slate-700">평가 의견</label>
+                <textarea
+                  value={evaluationComment}
+                  onChange={(e) => setEvaluationComment(e.target.value)}
+                  placeholder="적격/부적격 여부와 별개로 판단 근거 및 보완 요청사항을 입력하세요."
+                  rows={4}
+                  className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 border-t border-slate-100 px-5 py-4">
+              <Button type="button" variant="outline" className="flex-1" onClick={closeEvaluation} disabled={evaluationSubmitting}>
+                취소
+              </Button>
+              <Button type="button" className="flex-1" onClick={submitEvaluation} disabled={evaluationSubmitting} isLoading={evaluationSubmitting}>
+                평가 저장
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {criteriaOpen && (
+        <div className="fixed inset-0 z-[220] flex items-center justify-center p-4">
+          <button
+            type="button"
+            className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+            aria-label="닫기"
+            onClick={() => !criteriaSubmitting && setCriteriaOpen(false)}
+          />
+          <div className="relative z-10 flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            <div className="border-b border-slate-100 px-5 py-4">
+              <h2 className="text-lg font-black text-slate-900">적격수급업체 기준 수립</h2>
+              <p className="text-xs text-slate-500">
+                평가 항목을 직접 구성할 수 있습니다. 기본 포맷은 자동 제공됩니다.
+              </p>
+            </div>
+
+            <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-bold text-slate-700">평가 항목</p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setCriteriaDraft(DEFAULT_EVALUATION_CRITERIA);
+                      setThresholdDraft(EVALUATION_THRESHOLD);
+                    }}
+                  >
+                    기본 포맷 복원
+                  </Button>
+                  <Button type="button" size="sm" onClick={addCriteriaRow}>
+                    항목 추가
+                  </Button>
+                </div>
+              </div>
+
+              <ul className="space-y-3">
+                {criteriaDraft.map((item) => (
+                  <li key={item.id} className="rounded-xl border border-slate-200 bg-slate-50/40 p-3">
+                    <div className="grid gap-2 sm:grid-cols-6">
+                      <input
+                        value={item.label}
+                        onChange={(e) => updateCriteriaRow(item.id, 'label', e.target.value)}
+                        placeholder="항목명"
+                        className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm sm:col-span-2"
+                      />
+                      <input
+                        value={item.description}
+                        onChange={(e) => updateCriteriaRow(item.id, 'description', e.target.value)}
+                        placeholder="항목 설명"
+                        className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm sm:col-span-3"
+                      />
+                      <div className="flex gap-2 sm:col-span-1">
+                        <input
+                          type="number"
+                          min={1}
+                          value={item.maxScore}
+                          onChange={(e) => updateCriteriaRow(item.id, 'maxScore', e.target.value)}
+                          className="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-right text-sm"
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="danger"
+                          onClick={() => removeCriteriaRow(item.id)}
+                          disabled={criteriaDraft.length <= 1}
+                        >
+                          삭제
+                        </Button>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-3">
+                <p className="text-sm font-bold text-slate-800">총점 및 적격 기준</p>
+                <p className="mt-1 text-xs text-slate-600">현재 배점 총점: {criteriaDraftTotal}점</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <label className="text-xs font-bold text-slate-600">적격 기준 점수</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={criteriaDraftTotal}
+                    value={thresholdDraft}
+                    onChange={(e) => setThresholdDraft(Math.max(0, Math.min(criteriaDraftTotal, Number(e.target.value) || 0)))}
+                    className="w-28 rounded-md border border-slate-300 bg-white px-2 py-1 text-right text-sm font-bold"
+                  />
+                  <span className="text-xs text-slate-500">/ {criteriaDraftTotal}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2 border-t border-slate-100 px-5 py-4">
+              <Button type="button" variant="outline" className="flex-1" onClick={() => setCriteriaOpen(false)} disabled={criteriaSubmitting}>
+                취소
+              </Button>
+              <Button type="button" className="flex-1" onClick={saveCriteria} disabled={criteriaSubmitting} isLoading={criteriaSubmitting}>
+                기준 저장
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </WorkspaceShell>
   );
 }

@@ -76,6 +76,30 @@ export interface ContractorPartner {
   /** 업종·면허 등 선택 항목의 텍스트 메모 */
   optionalText?: Partial<Record<'industryLicense', string>>;
   optionalDocs?: Partial<Record<OptionalDocKey, StoredFile>>;
+  evaluationCriteriaConfig?: {
+    criteria: Array<{
+      id: string;
+      label: string;
+      description: string;
+      maxScore: number;
+    }>;
+    thresholdScore: number;
+    updatedAt?: unknown;
+  };
+  qualificationEvaluation?: {
+    totalScore: number;
+    thresholdScore: number;
+    status: 'qualified' | 'unqualified';
+    comment: string;
+    scores: Record<string, number>;
+    criteriaSnapshot?: Array<{
+      id: string;
+      label: string;
+      description: string;
+      maxScore: number;
+    }>;
+    evaluatedAt?: unknown;
+  };
   createdAt?: unknown;
   updatedAt?: unknown;
 }

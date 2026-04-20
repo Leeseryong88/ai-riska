@@ -76,6 +76,11 @@ service cloud.firestore {
       allow read, update, delete: if isAuthenticated() && resource.data.managerId == request.auth.uid;
     }
 
+    match /contractor_partner_eval_criteria/{userId} {
+      allow create: if isAuthenticated() && request.auth.uid == userId && request.resource.data.managerId == request.auth.uid;
+      allow read, update, delete: if isAuthenticated() && request.auth.uid == userId && resource.data.managerId == request.auth.uid;
+    }
+
     // 근로자 의견청취: 관리자별 안내 HTML (공개 조회는 제출 페이지용)
     match /worker_feedback_settings/{userId} {
       allow get: if true;
