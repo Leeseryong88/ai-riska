@@ -122,12 +122,16 @@ export default function ServiceGlyph({ icon, className = 'h-5 w-5' }: ServiceGly
       );
 
     case 'meeting':
-      /* 회의록: 원탁 회의(사람들+중앙 문서) */
+      /* 회의록: 두루마리·의사록 (Lucide ScrollText와 동일 path) */
       return (
         <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-          <circle {...stroke} cx="12" cy="12" r="3.5" />
-          <path {...stroke} d="M12 4v2M12 18v2M4 12h2M18 12h2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M6.3 17.7l1.4-1.4M16.3 7.7l1.4-1.4" />
-          <path {...stroke} d="M10.5 11.5h3M10.5 13h3" />
+          <path {...stroke} d="M15 12h-5" />
+          <path {...stroke} d="M15 8h-5" />
+          <path {...stroke} d="M19 17V5a2 2 0 0 0-2-2H4" />
+          <path
+            {...stroke}
+            d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"
+          />
         </svg>
       );
 
