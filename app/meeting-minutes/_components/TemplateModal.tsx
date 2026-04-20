@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { X, Printer, Pencil, Check, Save } from 'lucide-react';
 import { MeetingTemplate, type MeetingTemplateHandle } from './MeetingTemplate';
 import { MEETING_TYPE_CYCLE, MEETING_TYPE_LABEL, type MeetingType } from '../_lib/types';
@@ -15,6 +15,8 @@ interface TemplateModalProps {
 export const TemplateModal: React.FC<TemplateModalProps> = ({ type, onClose }) => {
   const [editing, setEditing] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
+  const [storageNoticeVisible, setStorageNoticeVisible] = useState(false);
+  const storageNoticeTimerRef = useRef<number | null>(null);
   const templateRef = useRef<MeetingTemplateHandle | null>(null);
 
   // 모달이 새로 열릴 때 편집 상태 초기화
@@ -22,13 +24,38 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({ type, onClose }) =
     if (type) {
       setEditing(false);
       setSavedFlash(false);
+      setStorageNoticeVisible(false);
+      if (storageNoticeTimerRef.current) {
+        window.clearTimeout(storageNoticeTimerRef.current);
+        storageNoticeTimerRef.current = null;
+      }
     }
   }, [type]);
+
+  useEffect(() => {
+    return () => {
+      if (storageNoticeTimerRef.current) {
+        window.clearTimeout(storageNoticeTimerRef.current);
+      }
+    };
+  }, []);
+
+  const showStorageNotice = useCallback(() => {
+    setStorageNoticeVisible(true);
+    if (storageNoticeTimerRef.current) {
+      window.clearTimeout(storageNoticeTimerRef.current);
+    }
+    storageNoticeTimerRef.current = window.setTimeout(() => {
+      setStorageNoticeVisible(false);
+      storageNoticeTimerRef.current = null;
+    }, 4500);
+  }, []);
 
   const handleSaveBasics = () => {
     templateRef.current?.saveValues();
     setSavedFlash(true);
     window.setTimeout(() => setSavedFlash(false), 1600);
+    showStorageNotice();
   };
 
   if (!type) return null;
@@ -137,6 +164,12 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({ type, onClose }) =
           </button>
         </div>
 
+        {storageNoticeVisible && (
+          <div className="border-b border-red-200 bg-red-500 px-6 py-2.5 text-xs font-bold text-white shadow-sm">
+            이 설정은 현재 브라우저에만 저장됩니다. 기기/브라우저를 바꾸거나 캐시(사이트 데이터)를 삭제하면 원래 양식으로 돌아갑니다.
+          </div>
+        )}
+
         {/* Action bar */}
         <div className="flex items-center justify-between gap-2 border-b border-slate-100 bg-slate-50/50 px-6 py-3">
           <p className="hidden text-[11px] font-bold text-slate-400 sm:block">
@@ -148,7 +181,13 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({ type, onClose }) =
           </p>
           <div className="flex flex-1 justify-end gap-2 sm:flex-none">
             <button
-              onClick={() => setEditing((prev) => !prev)}
+              onClick={() =>
+                setEditing((prev) => {
+                  const next = !prev;
+                  if (prev && !next) showStorageNotice();
+                  return next;
+                })
+              }
               className={`flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold transition ${
                 editing
                   ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
