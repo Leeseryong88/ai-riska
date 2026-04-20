@@ -45,6 +45,7 @@ function ShellServiceLinks({
     <>
       {services
         .filter((service) => filterIds.includes(service.id))
+        .sort((a, b) => filterIds.indexOf(a.id) - filterIds.indexOf(b.id))
         .map((service) => {
           const isActive =
             isServiceActive(service, pathname, search) ||
@@ -85,6 +86,7 @@ function ShellServiceLinksFallback({
     <>
       {services
         .filter((service) => filterIds.includes(service.id))
+        .sort((a, b) => filterIds.indexOf(a.id) - filterIds.indexOf(b.id))
         .map((service) => {
           const isActive = !!serviceHref && service.href === serviceHref;
           return (
@@ -212,8 +214,8 @@ export default function WorkspaceShell({
                       'safety-manager-todo',
                       'safety-log',
                       'meeting-minutes',
-                      'work-permit',
                       'contractor-partners',
+                      'work-permit',
                       'worker-feedback',
                     ]}
                     serviceHref={serviceHref}
@@ -225,8 +227,8 @@ export default function WorkspaceShell({
                     'safety-manager-todo',
                     'safety-log',
                     'meeting-minutes',
-                    'work-permit',
                     'contractor-partners',
+                    'work-permit',
                     'worker-feedback',
                   ]}
                   serviceHref={serviceHref}

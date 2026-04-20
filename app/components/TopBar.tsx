@@ -286,8 +286,8 @@ export default function TopBar({ onOpenContact }: TopBarProps) {
                         'safety-manager-todo',
                         'safety-log',
                         'meeting-minutes',
-                        'work-permit',
                         'contractor-partners',
+                        'work-permit',
                         'worker-feedback',
                       ].includes(service.id)
                     )
@@ -297,16 +297,16 @@ export default function TopBar({ onOpenContact }: TopBarProps) {
                           'safety-manager-todo',
                           'safety-log',
                           'meeting-minutes',
-                          'work-permit',
                           'contractor-partners',
+                          'work-permit',
                           'worker-feedback',
                         ].indexOf(a.id) -
                         [
                           'safety-manager-todo',
                           'safety-log',
                           'meeting-minutes',
-                          'work-permit',
                           'contractor-partners',
+                          'work-permit',
                           'worker-feedback',
                         ].indexOf(b.id),
                     )
