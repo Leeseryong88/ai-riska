@@ -7,7 +7,7 @@ import { LogForm } from '../_components/LogForm';
 import { LogDetail } from '../_components/LogDetail';
 import { SafetyLog } from '../_lib/types';
 import { Button } from '../_components/ui/Button';
-import { Plus, FileText, Edit, Loader2, X } from 'lucide-react';
+import { Plus, FileText, Edit, Loader2, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/app/context/AuthContext';
 import { db } from '@/app/lib/firebase';
@@ -21,66 +21,43 @@ import {
   where,
   orderBy,
   getDocs,
-  limit,
-  startAfter,
   serverTimestamp,
-  QueryDocumentSnapshot,
-  DocumentData,
 } from 'firebase/firestore';
 import { uploadBase64 } from '@/app/work-permit/_lib/storage';
 
-const LOGS_PER_PAGE = 10;
-
 type ModalMode = null | 'create' | 'edit' | 'detail';
+const ITEMS_PER_PAGE = 10;
 
 function SafetyDailyLogContent() {
   const { user } = useAuth();
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [logs, setLogs] = useState<SafetyLog[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
   const [selectedLog, setSelectedLog] = useState<SafetyLog | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
-  const [hasMore, setHasMore] = useState(true);
 
-  const fetchLogs = async (isNextPage = false) => {
+  const fetchLogs = async () => {
     if (!user) return;
-
-    if (isNextPage) setIsLoadingMore(true);
-    else setIsLoading(true);
+    setIsLoading(true);
 
     try {
-      let q = query(
+      const q = query(
         collection(db, 'safety_logs'),
         where('managerId', '==', user.uid),
-        orderBy('date', 'desc'),
-        limit(LOGS_PER_PAGE)
+        orderBy('date', 'desc')
       );
-
-      if (isNextPage && lastDoc) {
-        q = query(q, startAfter(lastDoc));
-      }
 
       const snapshot = await getDocs(q);
       const newLogs = snapshot.docs.map((d) => ({
         ...d.data(),
         id: d.id,
       })) as SafetyLog[];
-
-      if (isNextPage) {
-        setLogs((prev) => [...prev, ...newLogs]);
-      } else {
-        setLogs(newLogs);
-      }
-
-      setLastDoc(snapshot.docs[snapshot.docs.length - 1] || null);
-      setHasMore(snapshot.docs.length === LOGS_PER_PAGE);
+      setLogs(newLogs);
     } catch (error) {
       console.error('Error fetching logs:', error);
     } finally {
       setIsLoading(false);
-      setIsLoadingMore(false);
     }
   };
 
@@ -88,6 +65,16 @@ function SafetyDailyLogContent() {
     if (!user) return;
     fetchLogs();
   }, [user]);
+
+  const totalPages = Math.max(1, Math.ceil(logs.length / ITEMS_PER_PAGE));
+  const pageStart = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedLogs = logs.slice(pageStart, pageStart + ITEMS_PER_PAGE);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const closeModal = () => {
     setModalMode(null);
@@ -226,7 +213,8 @@ function SafetyDailyLogContent() {
         ) : (
           <div className="space-y-6">
             <LogList
-              logs={logs}
+              logs={paginatedLogs}
+              startNumber={pageStart + 1}
               onSelect={(log) => {
                 setSelectedLog(log);
                 setModalMode('detail');
@@ -234,22 +222,44 @@ function SafetyDailyLogContent() {
               onDelete={handleDeleteLog}
             />
 
-            {hasMore && logs.length > 0 && (
-              <div className="flex justify-center pt-4">
+            {logs.length > ITEMS_PER_PAGE && (
+              <div className="flex items-center justify-center gap-2 pt-2">
                 <Button
                   variant="outline"
-                  onClick={() => fetchLogs(true)}
-                  disabled={isLoadingMore}
-                  className="w-full max-w-xs gap-2"
+                  size="sm"
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="gap-1"
                 >
-                  {isLoadingMore ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      불러오는 중...
-                    </>
-                  ) : (
-                    <>더 보기</>
-                  )}
+                  <ChevronLeft className="h-4 w-4" />
+                  이전
+                </Button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`h-9 min-w-9 rounded-md px-3 text-sm font-bold transition-colors ${
+                        page === currentPage
+                          ? 'bg-blue-600 text-white'
+                          : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="gap-1"
+                >
+                  다음
+                  <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
             )}

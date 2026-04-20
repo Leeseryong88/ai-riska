@@ -20,6 +20,7 @@ interface LogListProps {
   logs: SafetyLog[];
   onSelect: (log: SafetyLog) => void;
   onDelete: (id: string) => void;
+  startNumber?: number;
 }
 
 const WeatherIcon = ({ weather }: { weather: string }) => {
@@ -39,7 +40,7 @@ const WeatherIcon = ({ weather }: { weather: string }) => {
   }
 };
 
-export const LogList: React.FC<LogListProps> = ({ logs, onSelect, onDelete }) => {
+export const LogList: React.FC<LogListProps> = ({ logs, onSelect, onDelete, startNumber = 1 }) => {
   if (logs.length === 0) {
     return (
       <div className="text-center py-20 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
@@ -60,7 +61,9 @@ export const LogList: React.FC<LogListProps> = ({ logs, onSelect, onDelete }) =>
         <div className="col-span-1 text-center">작업</div>
       </div>
       <div className="divide-y divide-gray-100">
-        {logs.map((log, index) => (
+        {logs.map((log, index) => {
+          const rowNumber = startNumber + index;
+          return (
           <motion.div
             layout
             key={log.id}
@@ -70,12 +73,12 @@ export const LogList: React.FC<LogListProps> = ({ logs, onSelect, onDelete }) =>
             className="grid grid-cols-1 md:grid-cols-12 gap-4 px-6 py-4 hover:bg-blue-50/30 transition-all cursor-pointer items-center"
           >
             <div className="hidden md:flex md:col-span-1 items-center justify-center">
-              <span className="text-sm font-black text-blue-600">{index + 1}</span>
+              <span className="text-sm font-black text-blue-600">{rowNumber}</span>
             </div>
 
             <div className="col-span-1 md:col-span-5 flex items-center gap-3 min-w-0">
               <div className="md:hidden w-8 h-8 shrink-0 rounded-lg bg-blue-100 flex items-center justify-center">
-                <span className="text-xs font-black text-blue-600">{index + 1}</span>
+                <span className="text-xs font-black text-blue-600">{rowNumber}</span>
               </div>
               <div className="hidden md:flex w-10 h-10 rounded-lg bg-blue-100 items-center justify-center shrink-0">
                 <FileText className="w-5 h-5 text-blue-600" />
@@ -122,7 +125,8 @@ export const LogList: React.FC<LogListProps> = ({ logs, onSelect, onDelete }) =>
               </div>
             </div>
           </motion.div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
