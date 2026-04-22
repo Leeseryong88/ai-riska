@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   collection,
   query,
@@ -20,6 +20,7 @@ import { db } from '@/app/lib/firebase';
 import { useAuth } from '@/app/context/AuthContext';
 import { Trash2, ExternalLink, Info, ListChecks, Printer, Edit2, Check, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Pagination } from '@/components/ui/Pagination';
 
 interface ChecklistRecord {
   id: string;
@@ -34,10 +35,8 @@ interface ChecklistRecord {
 export function SafetyChecklistTab() {
   const { user } = useAuth();
   const [items, setItems] = useState<ChecklistRecord[]>([]);
-  const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
+  const [listPage, setListPage] = useState(1);
   const [selectedItem, setSelectedItem] = useState<ChecklistRecord | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
@@ -45,57 +44,57 @@ export function SafetyChecklistTab() {
   const [isSaving, setIsSaving] = useState(false);
   const contentEditRef = useRef<HTMLDivElement>(null);
 
-  const ITEMS_PER_PAGE = 10;
+  const FETCH_BATCH = 100;
+  const LIST_PAGE_SIZE = 10;
 
-  const fetchItems = async (isNextPage = false) => {
+  const fetchItems = async () => {
     if (!user) return;
 
+    setLoading(true);
     try {
-      if (!isNextPage) setLoading(true);
-      else setLoadingMore(true);
-
-      let q = query(
-        collection(db, 'safetyChecklists'),
-        where('userId', '==', user.uid),
-        orderBy('createdAt', 'desc'),
-        limit(ITEMS_PER_PAGE)
-      );
-
-      if (isNextPage && lastDoc) {
-        q = query(
+      const aggregated: ChecklistRecord[] = [];
+      let cursor: QueryDocumentSnapshot<DocumentData> | undefined;
+      while (true) {
+        let q = query(
           collection(db, 'safetyChecklists'),
           where('userId', '==', user.uid),
           orderBy('createdAt', 'desc'),
-          startAfter(lastDoc),
-          limit(ITEMS_PER_PAGE)
+          limit(FETCH_BATCH)
         );
+        if (cursor) q = query(q, startAfter(cursor));
+        const querySnapshot = await getDocs(q);
+        if (querySnapshot.empty) break;
+        aggregated.push(
+          ...querySnapshot.docs.map(
+            (d) => ({ id: d.id, ...d.data() }) as ChecklistRecord
+          )
+        );
+        if (querySnapshot.docs.length < FETCH_BATCH) break;
+        cursor = querySnapshot.docs[querySnapshot.docs.length - 1];
       }
-
-      const querySnapshot = await getDocs(q);
-      const newItems = querySnapshot.docs.map((d) => ({
-        id: d.id,
-        ...d.data(),
-      })) as ChecklistRecord[];
-
-      if (isNextPage) {
-        setItems((prev) => [...prev, ...newItems]);
-      } else {
-        setItems(newItems);
-      }
-
-      setLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1] || null);
-      setHasMore(querySnapshot.docs.length === ITEMS_PER_PAGE);
+      setItems(aggregated);
+      setListPage(1);
     } catch (error) {
       console.error('Error fetching safety checklists:', error);
     } finally {
       setLoading(false);
-      setLoadingMore(false);
     }
   };
 
   useEffect(() => {
     fetchItems();
   }, [user]);
+
+  const totalPages = Math.max(1, Math.ceil(items.length / LIST_PAGE_SIZE));
+
+  useEffect(() => {
+    if (listPage > totalPages) setListPage(totalPages);
+  }, [listPage, totalPages]);
+
+  const pagedItems = useMemo(() => {
+    const start = (listPage - 1) * LIST_PAGE_SIZE;
+    return items.slice(start, start + LIST_PAGE_SIZE);
+  }, [items, listPage]);
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -220,6 +219,7 @@ export function SafetyChecklistTab() {
           <p className="text-gray-500 font-bold">저장된 안전점검 체크리스트가 없습니다.</p>
         </div>
       ) : (
+        <>
         <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
           <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-200 text-xs font-black text-gray-500 uppercase tracking-wider">
             <div className="col-span-1 text-center">번호</div>
@@ -229,7 +229,7 @@ export function SafetyChecklistTab() {
             <div className="col-span-1 text-center">작업</div>
           </div>
           <div className="divide-y divide-gray-100">
-            {items.map((item, index) => (
+            {pagedItems.map((item, index) => (
               <motion.div
                 layout
                 key={item.id}
@@ -239,11 +239,11 @@ export function SafetyChecklistTab() {
                 className="grid grid-cols-1 md:grid-cols-12 gap-4 px-6 py-4 hover:bg-rose-50/30 transition-all cursor-pointer items-center"
               >
                 <div className="hidden md:flex md:col-span-1 items-center justify-center">
-                  <span className="text-sm font-black text-rose-600">{index + 1}</span>
+                  <span className="text-sm font-black text-rose-600">{(listPage - 1) * LIST_PAGE_SIZE + index + 1}</span>
                 </div>
                 <div className="col-span-1 md:col-span-5 flex items-center gap-3">
                   <div className="md:hidden w-8 h-8 shrink-0 rounded-lg bg-rose-100 flex items-center justify-center">
-                    <span className="text-xs font-black text-rose-600">{index + 1}</span>
+                    <span className="text-xs font-black text-rose-600">{(listPage - 1) * LIST_PAGE_SIZE + index + 1}</span>
                   </div>
                   <div className="hidden md:flex w-10 h-10 rounded-lg bg-rose-100 items-center justify-center shrink-0">
                     <ListChecks className="w-5 h-5 text-rose-600" />
@@ -281,18 +281,13 @@ export function SafetyChecklistTab() {
             ))}
           </div>
         </div>
-      )}
-
-      {hasMore && (
-        <div className="flex justify-center pt-4">
-          <button
-            onClick={() => fetchItems(true)}
-            disabled={loadingMore}
-            className="px-8 py-3 bg-white border border-gray-200 rounded-xl text-sm font-black text-gray-600 hover:border-rose-500 hover:text-rose-600 transition-all disabled:opacity-50"
-          >
-            {loadingMore ? '로딩 중...' : '더 보기'}
-          </button>
-        </div>
+        <Pagination
+          page={listPage}
+          totalPages={totalPages}
+          onChange={setListPage}
+          accentClass="bg-amber-600 text-white border-amber-600"
+        />
+        </>
       )}
 
       <AnimatePresence>
