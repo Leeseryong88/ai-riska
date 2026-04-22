@@ -2,7 +2,7 @@
 
 import React, { Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Camera, ShieldAlert, FileText, Calculator, ListChecks } from 'lucide-react';
+import { Camera, ShieldAlert, FileText, ClipboardList, Calculator, ListChecks } from 'lucide-react';
 import { PhotoAnalysisTab } from './_components/tabs/PhotoAnalysisTab';
 import { RiskAssessmentTab } from './_components/tabs/RiskAssessmentTab';
 import { HealthSafetyPlanTab } from './_components/tabs/HealthSafetyPlanTab';
@@ -21,6 +21,7 @@ function StorageContent() {
     { id: 'photo', name: '사진분석', icon: Camera },
     { id: 'assessment', name: '위험성평가', icon: ShieldAlert },
     { id: 'hsp', name: '안전보건계획서', icon: FileText },
+    { id: 'workplan', name: '작업계획서', icon: ClipboardList },
     { id: 'mfp', name: '관리비 계획서', icon: Calculator },
     { id: 'checklist', name: '점검 체크리스트', icon: ListChecks },
   ];
@@ -78,6 +79,11 @@ function StorageContent() {
               {activeTab === 'photo' && <PhotoAnalysisTab />}
               {activeTab === 'assessment' && <RiskAssessmentTab />}
               {activeTab === 'hsp' && <HealthSafetyPlanTab />}
+              {activeTab === 'workplan' && (
+                <div className="flex min-h-[320px] items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/50">
+                  <p className="text-lg font-bold text-slate-500">구현예정</p>
+                </div>
+              )}
               {activeTab === 'mfp' && <ManagementFeePlanTab />}
               {activeTab === 'checklist' && <SafetyChecklistTab />}
             </motion.div>

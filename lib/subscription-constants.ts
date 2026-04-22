@@ -3,6 +3,7 @@ export const AI_SERVICE_PATH_PREFIXES = [
   '/camera',
   '/assessment',
   '/health-safety-plan',
+  '/work-plan',
   '/safety-management-fee',
   '/safety-checklist',
 ] as const;
