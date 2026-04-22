@@ -245,6 +245,19 @@ export default function VisitorFormPage() {
           animate={{ scale: 1, opacity: 1 }}
           className="w-full max-w-[210mm] space-y-6"
         >
+          <a
+            href="https://modu-safe.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block overflow-hidden rounded-lg border border-gray-200 bg-white shadow-md transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+            aria-label="모두의 안전 서비스 바로가기"
+          >
+            <img
+              src="/modu-safe-banner.png"
+              alt="모두의 안전 — 위험성평가·안전관리계획서 AI"
+              className="h-auto w-full object-contain"
+            />
+          </a>
           {/* Document Container for Image Generation */}
           <div 
             id="submission-summary" 
