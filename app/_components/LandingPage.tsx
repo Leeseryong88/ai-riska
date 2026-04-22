@@ -238,8 +238,8 @@ export default function LandingPage() {
           <div className="mb-12 text-center">
             <h2 className="text-3xl font-black text-slate-900 sm:text-4xl">주요 서비스 안내</h2>
             <p className="mt-8 text-lg font-medium text-slate-500 sm:text-xl">
-              중대재해처벌법이 요구하는 안전보건관리체계 구축의 모든 과정을<br className="hidden sm:block" />
-              법령 기반 템플릿으로 제공하여 안전시스템을 구축하고 운영할 수 있습니다.
+              현장에서 바로 쓸 수 있는 안전보건 서류 양식을 제공하고, 안전관리자의 반복 업무를 줄여 업무 편의를 높이며,<br className="hidden sm:block" />
+              전담 안전관리자를 두기 어려운 소규모 사업장이 빠지기 쉬운 서류·기록 공백을 메울 수 있도록 돕습니다.
             </p>
           </div>
           
