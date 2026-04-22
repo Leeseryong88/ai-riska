@@ -554,11 +554,10 @@ function OshcTemplate() {
           <thead>
             <tr>
               <th className={headCls} style={{ width: '10%' }}>구분</th>
-              <th className={headCls} style={{ width: '18%' }}>직위</th>
-              <th className={headCls} style={{ width: '18%' }}>성명</th>
-              <th className={headCls} style={{ width: '22%' }}>소속</th>
-              <th className={headCls} style={{ width: '22%' }}>위원 구분</th>
-              <th className={headCls} style={{ width: '10%' }}>연락처</th>
+              <th className={headCls} style={{ width: '20%' }}>직위</th>
+              <th className={headCls} style={{ width: '20%' }}>성명</th>
+              <th className={headCls} style={{ width: '24%' }}>소속</th>
+              <th className={headCls} style={{ width: '26%' }}>위원 구분</th>
             </tr>
           </thead>
           <tbody>
@@ -581,9 +580,6 @@ function OshcTemplate() {
                     </td>
                     <td className={cellCls}>
                       <Txt name={`attendees.${i}.role`} placeholder="위원장/간사/위원" />
-                    </td>
-                    <td className={cellCls}>
-                      <Txt name={`attendees.${i}.contact`} />
                     </td>
                   </tr>
                 );
@@ -761,10 +757,9 @@ function PartnerCouncilTemplate() {
           <thead>
             <tr>
               <th className={headCls} style={{ width: '8%' }}>No.</th>
-              <th className={headCls} style={{ width: '28%' }}>회사(공종)</th>
-              <th className={headCls} style={{ width: '20%' }}>직위</th>
-              <th className={headCls} style={{ width: '20%' }}>성명</th>
-              <th className={headCls}>연락처</th>
+              <th className={headCls} style={{ width: '32%' }}>회사(공종)</th>
+              <th className={headCls} style={{ width: '22%' }}>직위</th>
+              <th className={headCls} style={{ width: '38%' }}>성명</th>
             </tr>
           </thead>
           <tbody>
@@ -782,9 +777,6 @@ function PartnerCouncilTemplate() {
                   </td>
                   <td className={cellCls}>
                     <Txt name={`attendees.${i}.name`} />
-                  </td>
-                  <td className={cellCls}>
-                    <Txt name={`attendees.${i}.contact`} />
                   </td>
                 </tr>
               )}
@@ -958,10 +950,9 @@ function OtherMeetingTemplate() {
           <thead>
             <tr>
               <th className={headCls} style={{ width: '8%' }}>No.</th>
-              <th className={headCls} style={{ width: '28%' }}>소속</th>
-              <th className={headCls} style={{ width: '22%' }}>직위</th>
-              <th className={headCls} style={{ width: '22%' }}>성명</th>
-              <th className={headCls}>연락처</th>
+              <th className={headCls} style={{ width: '32%' }}>소속</th>
+              <th className={headCls} style={{ width: '26%' }}>직위</th>
+              <th className={headCls} style={{ width: '34%' }}>성명</th>
             </tr>
           </thead>
           <tbody>
@@ -979,9 +970,6 @@ function OtherMeetingTemplate() {
                   </td>
                   <td className={cellCls}>
                     <Txt name={`attendees.${i}.name`} />
-                  </td>
-                  <td className={cellCls}>
-                    <Txt name={`attendees.${i}.contact`} />
                   </td>
                 </tr>
               )}
