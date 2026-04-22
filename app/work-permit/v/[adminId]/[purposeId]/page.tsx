@@ -8,7 +8,7 @@ import { VisitPurpose, AdminUser } from '../../../_lib/types';
 import { Card, Button } from '../../../_components/ui/Button';
 import { DynamicForm } from '../../../_components/DynamicForm';
 import { uploadBase64 } from '../../../_lib/storage';
-import { ChevronLeft, ChevronDown, Loader2, Download, Bell, ClipboardList, AlertCircle, ShieldAlert, Info } from 'lucide-react';
+import { ChevronLeft, Loader2, Download, Bell, ClipboardList, AlertCircle, ShieldAlert, Info } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
 const SignaturePad = dynamic(() => import('../../../_components/SignaturePad').then(mod => mod.SignaturePad), { ssr: false });
@@ -241,11 +241,16 @@ export default function VisitorFormPage() {
 
   if (submitted && submittedLog) {
     return (
-      <div className="min-h-screen bg-gray-100 flex flex-col items-center py-6 px-4 md:py-12">
+      <div
+        className={cn(
+          'min-h-screen bg-gray-100 flex flex-col items-center px-4 md:px-6',
+          !showSubmissionPreview ? 'justify-center py-8' : 'py-6 md:py-12'
+        )}
+      >
         <motion.div
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="w-full max-w-[210mm] space-y-6"
+          className={cn('w-full max-w-[210mm]', !showSubmissionPreview ? 'space-y-4 text-center' : 'space-y-6')}
         >
           <a
             href="https://modu-safe.com/"
@@ -262,24 +267,23 @@ export default function VisitorFormPage() {
           </a>
           <AnimatePresence mode="wait">
             {!showSubmissionPreview ? (
-              <motion.div
+              <motion.p
                 key="submission-collapsed"
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.2 }}
-                className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-md sm:flex-row sm:items-center sm:justify-between"
+                className="text-base font-bold text-gray-900 leading-relaxed"
               >
-                <p className="text-base font-bold text-gray-900">작업허가서 제출이 완료됐습니다.</p>
-                <Button
+                작업허가서 제출이 완료됐습니다.{' '}
+                <button
                   type="button"
-                  className="h-11 w-full shrink-0 gap-1.5 sm:w-auto sm:min-w-[7.5rem]"
                   onClick={() => setShowSubmissionPreview(true)}
+                  className="text-sm font-semibold text-blue-600 underline decoration-blue-600/40 underline-offset-2 hover:text-blue-700 hover:decoration-blue-700"
                 >
-                  <ChevronDown className="h-4 w-4" />
                   펼쳐보기
-                </Button>
-              </motion.div>
+                </button>
+              </motion.p>
             ) : (
               <motion.div
                 key="submission-expanded"
