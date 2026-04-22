@@ -18,6 +18,11 @@ import type { MeetingType } from '../_lib/types';
  * 수정 모드 + 커스터마이징 영속화 컨텍스트
  * ============================================================ */
 
+interface FieldSize {
+  width?: number;
+  height?: number;
+}
+
 interface EditContextValue {
   editing: boolean;
   isExcluded: (id: string) => boolean;
@@ -27,6 +32,8 @@ interface EditContextValue {
   removeRow: (id: string, def: number) => void;
   getValue: (name: string) => string;
   setValue: (name: string, value: string) => void;
+  getFieldSize: (name: string) => FieldSize | undefined;
+  setFieldSize: (name: string, size: FieldSize) => void;
 }
 
 const EditContext = createContext<EditContextValue | null>(null);
@@ -45,9 +52,15 @@ interface PersistedState {
   excluded: string[];
   rowCounts: Record<string, number>;
   values: Record<string, string>;
+  fieldSizes: Record<string, FieldSize>;
 }
 
-const EMPTY_STATE: PersistedState = { excluded: [], rowCounts: {}, values: {} };
+const EMPTY_STATE: PersistedState = {
+  excluded: [],
+  rowCounts: {},
+  values: {},
+  fieldSizes: {},
+};
 
 const storageKey = (type: MeetingType) => `meeting-template:${type}`;
 
@@ -62,6 +75,8 @@ function loadPersisted(type: MeetingType): PersistedState {
       rowCounts:
         parsed.rowCounts && typeof parsed.rowCounts === 'object' ? parsed.rowCounts : {},
       values: parsed.values && typeof parsed.values === 'object' ? parsed.values : {},
+      fieldSizes:
+        parsed.fieldSizes && typeof parsed.fieldSizes === 'object' ? parsed.fieldSizes : {},
     };
   } catch {
     return EMPTY_STATE;
@@ -96,8 +111,10 @@ export const MeetingTemplate = forwardRef<MeetingTemplateHandle, MeetingTemplate
     const [excluded, setExcluded] = useState<Set<string>>(new Set());
     const [rowCounts, setRowCounts] = useState<Record<string, number>>({});
     const [values, setValues] = useState<Record<string, string>>({});
+    const [fieldSizes, setFieldSizes] = useState<Record<string, FieldSize>>({});
     // 로드 직후 첫 save 이펙트가 빈 초기값을 덮어쓰지 않도록 건너뛰기 위한 플래그
     const skipNextSaveRef = useRef(true);
+    const skipFieldSizesPersistRef = useRef(true);
 
     // 양식 타입 바뀔 때마다 저장된 상태 복원
     useEffect(() => {
@@ -105,7 +122,9 @@ export const MeetingTemplate = forwardRef<MeetingTemplateHandle, MeetingTemplate
       setExcluded(new Set(saved.excluded));
       setRowCounts(saved.rowCounts);
       setValues(saved.values);
+      setFieldSizes(saved.fieldSizes || {});
       skipNextSaveRef.current = true;
+      skipFieldSizesPersistRef.current = true;
     }, [type]);
 
     // 구조(제외/행 수) 는 변경 즉시 자동 저장
@@ -120,18 +139,30 @@ export const MeetingTemplate = forwardRef<MeetingTemplateHandle, MeetingTemplate
       });
     }, [type, excluded, rowCounts]);
 
+    useEffect(() => {
+      if (skipFieldSizesPersistRef.current) {
+        skipFieldSizesPersistRef.current = false;
+        return;
+      }
+      const t = window.setTimeout(() => {
+        savePartial(type, { fieldSizes });
+      }, 350);
+      return () => clearTimeout(t);
+    }, [type, fieldSizes]);
+
     useImperativeHandle(
       ref,
       () => ({
         saveValues: () => {
-          savePartial(type, { values });
+          savePartial(type, { values, fieldSizes });
         },
         clearValues: () => {
           setValues({});
-          savePartial(type, { values: {} });
+          setFieldSizes({});
+          savePartial(type, { values: {}, fieldSizes: {} });
         },
       }),
-      [type, values],
+      [type, values, fieldSizes],
     );
 
     const toggleExclude = useCallback((id: string) => {
@@ -155,6 +186,22 @@ export const MeetingTemplate = forwardRef<MeetingTemplateHandle, MeetingTemplate
       setValues((prev) => (prev[name] === value ? prev : { ...prev, [name]: value }));
     }, []);
 
+    const getFieldSize = useCallback(
+      (name: string) => fieldSizes[name],
+      [fieldSizes],
+    );
+
+    const setFieldSize = useCallback((name: string, size: FieldSize) => {
+      setFieldSizes((prev) => {
+        const cur = prev[name] ?? {};
+        const w = size.width != null ? Math.round(size.width) : cur.width;
+        const h = size.height != null ? Math.round(size.height) : cur.height;
+        const nextSize: FieldSize = { width: w, height: h };
+        if (cur.width === nextSize.width && cur.height === nextSize.height) return prev;
+        return { ...prev, [name]: nextSize };
+      });
+    }, []);
+
     const ctx: EditContextValue = useMemo(
       () => ({
         editing,
@@ -165,8 +212,21 @@ export const MeetingTemplate = forwardRef<MeetingTemplateHandle, MeetingTemplate
         removeRow,
         getValue: (name) => values[name] ?? '',
         setValue,
+        getFieldSize,
+        setFieldSize,
       }),
-      [editing, excluded, rowCounts, values, toggleExclude, addRow, removeRow, setValue],
+      [
+        editing,
+        excluded,
+        rowCounts,
+        values,
+        toggleExclude,
+        addRow,
+        removeRow,
+        setValue,
+        getFieldSize,
+        setFieldSize,
+      ],
     );
 
     return (
@@ -219,11 +279,40 @@ const Area: React.FC<{ name: string; rows?: number; placeholder?: string }> = ({
   rows = 3,
   placeholder,
 }) => {
-  const { getValue, setValue, editing } = useEdit();
+  const { getValue, setValue, editing, getFieldSize, setFieldSize } = useEdit();
+  const taRef = useRef<HTMLTextAreaElement>(null);
+  const sz = getFieldSize(name);
+
+  const sizeStyle: React.CSSProperties = {};
+  if (sz?.width && sz.width > 0) {
+    sizeStyle.width = sz.width;
+    sizeStyle.maxWidth = '100%';
+  }
+  if (sz?.height && sz.height > 0) {
+    sizeStyle.height = sz.height;
+  }
+
+  useEffect(() => {
+    if (!editing) return;
+    const el = taRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      const t = taRef.current;
+      if (!t) return;
+      const w = t.offsetWidth;
+      const h = t.offsetHeight;
+      if (w >= 40 && h >= 40) setFieldSize(name, { width: w, height: h });
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [editing, name, setFieldSize]);
+
   return (
     <textarea
+      ref={taRef}
       name={name}
-      className={`${textareaCls} ${editing ? 'resize min-h-[3rem]' : 'resize-none'}`}
+      className={`${textareaCls} ${editing ? 'resize min-h-[3rem]' : 'resize-none'} ${sz?.width ? 'max-w-full' : ''}`}
+      style={Object.keys(sizeStyle).length ? sizeStyle : undefined}
       rows={rows}
       value={getValue(name)}
       onChange={(e) => setValue(name, e.target.value)}

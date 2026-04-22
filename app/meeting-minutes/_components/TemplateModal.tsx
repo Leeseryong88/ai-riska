@@ -82,27 +82,48 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({ type, onClose }) =
     // 제외된 섹션 제거
     clone.querySelectorAll('[data-section-excluded="true"]').forEach((el) => el.remove());
 
-    // 원본 DOM의 입력값을 clone의 HTML 속성으로 옮겨 인쇄창에 반영되도록 함
-    const srcInputs = Array.from(src.querySelectorAll('input, textarea, select')) as (
+    // name 기준으로 매칭 (제외 섹션 제거 후에도 필드가 올바르게 대응되도록)
+    const srcFields = Array.from(src.querySelectorAll('input, textarea, select')) as (
       | HTMLInputElement
       | HTMLTextAreaElement
       | HTMLSelectElement
     )[];
-    const cloneInputs = Array.from(clone.querySelectorAll('input, textarea, select')) as (
-      | HTMLInputElement
-      | HTMLTextAreaElement
-      | HTMLSelectElement
-    )[];
-    srcInputs.forEach((el, i) => {
-      const c = cloneInputs[i];
-      if (!c) return;
-      if (el instanceof HTMLInputElement) {
-        c.setAttribute('value', el.value);
-      } else if (el instanceof HTMLTextAreaElement) {
-        (c as HTMLTextAreaElement).textContent = el.value;
-      } else if (el instanceof HTMLSelectElement) {
+    const byName = new Map<string, HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>();
+    for (const el of srcFields) {
+      const n = el.getAttribute('name');
+      if (n) byName.set(n, el);
+    }
+
+    clone.querySelectorAll('input, textarea, select').forEach((node) => {
+      const n = node.getAttribute('name');
+      if (!n) return;
+      const el = byName.get(n);
+      if (!el) return;
+
+      if (el instanceof HTMLInputElement && node instanceof HTMLInputElement) {
+        node.setAttribute('value', el.value);
+      } else if (el instanceof HTMLTextAreaElement && node instanceof HTMLTextAreaElement) {
+        const val = el.value;
+        node.defaultValue = val;
+        node.value = val;
+        while (node.firstChild) node.removeChild(node.firstChild);
+        node.appendChild(node.ownerDocument.createTextNode(val));
+        const rowHint = Number(node.getAttribute('rows') || '3');
+        const h = Math.max(
+          el.offsetHeight,
+          el.scrollHeight,
+          rowHint * 22,
+          val ? Math.ceil(val.split('\n').length * 22) + 32 : 72,
+        );
+        node.style.height = `${Math.ceil(h)}px`;
+        node.style.minHeight = `${Math.ceil(h)}px`;
+        node.style.boxSizing = 'border-box';
+        node.style.display = 'block';
+        node.style.whiteSpace = 'pre-wrap';
+        node.style.overflow = 'visible';
+      } else if (el instanceof HTMLSelectElement && node instanceof HTMLSelectElement) {
         const value = el.value;
-        (c as HTMLSelectElement).querySelectorAll('option').forEach((o) => {
+        node.querySelectorAll('option').forEach((o) => {
           if (o.getAttribute('value') === value || o.textContent === value) {
             o.setAttribute('selected', 'selected');
           } else {
@@ -124,7 +145,23 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({ type, onClose }) =
       .join('\n');
     printWindow.document.write(`<!doctype html><html><head><meta charset="utf-8"/><title>${MEETING_TYPE_LABEL[type]} 회의록 양식</title>${styles}<style>
       body { background: white; margin: 0; padding: 24px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      input, textarea, select { border: none !important; outline: none !important; background: transparent !important; }
+      input, select { border: none !important; outline: none !important; background: transparent !important; }
+      textarea {
+        outline: none !important;
+        background: #fff !important;
+        border: 1px solid #94a3b8 !important;
+        min-height: 4.5em !important;
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        white-space: pre-wrap !important;
+        overflow: visible !important;
+        box-sizing: border-box !important;
+        padding: 0.5rem !important;
+        color: #0f172a !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
       input::placeholder, textarea::placeholder { color: transparent !important; opacity: 0 !important; -webkit-text-fill-color: transparent !important; }
       input[type="date"]::-webkit-calendar-picker-indicator,
       input[type="datetime-local"]::-webkit-calendar-picker-indicator { display: none; }
