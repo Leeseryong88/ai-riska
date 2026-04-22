@@ -7,7 +7,7 @@ import { db, auth } from '@/app/lib/firebase';
 import { VisitorLog, VisitPurpose } from '../../_lib/types';
 import { Card, Button, Label, Input } from '../ui/Button';
 import { uploadBase64 } from '../../_lib/storage';
-import { Filter, Download, Eye, X, Loader2, Calendar, PenTool, Save, ClipboardList, Printer, ShieldAlert } from 'lucide-react';
+import { Filter, Download, Eye, X, Loader2, Calendar, PenTool, Save, ClipboardList, Printer, ShieldAlert, List } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
 const SignaturePad = dynamic(() => import('../SignaturePad').then(mod => mod.SignaturePad), { ssr: false });
@@ -32,7 +32,11 @@ export const LogsTab: React.FC = () => {
   const [isPrinting, setIsPrinting] = useState(false);
   const [listPage, setListPage] = useState(1);
   const [showUnsignedOnly, setShowUnsignedOnly] = useState(false);
-  
+  const [showAllPeriod, setShowAllPeriod] = useState(false);
+
+  const WIDE_START = '1900-01-01';
+  const WIDE_END = '2100-12-31';
+
   // Date filter states
   const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -109,6 +113,7 @@ export const LogsTab: React.FC = () => {
   };
 
   const handleApplyFilter = () => {
+    setShowAllPeriod(false);
     fetchLogs();
     setIsFilterOpen(false);
   };
@@ -166,10 +171,26 @@ export const LogsTab: React.FC = () => {
 
   const handleResetFilter = () => {
     const today = format(new Date(), 'yyyy-MM-dd');
+    setShowAllPeriod(false);
     setStartDate(today);
     setEndDate(today);
     fetchLogs(today, today);
     setIsFilterOpen(false);
+  };
+
+  const toggleAllPeriodList = () => {
+    if (showAllPeriod) {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      setShowAllPeriod(false);
+      setStartDate(today);
+      setEndDate(today);
+      fetchLogs(today, today);
+    } else {
+      setShowAllPeriod(true);
+      setStartDate(WIDE_START);
+      setEndDate(WIDE_END);
+      fetchLogs(WIDE_START, WIDE_END);
+    }
   };
 
   const handleAdminSign = async () => {
@@ -226,11 +247,9 @@ export const LogsTab: React.FC = () => {
     if (nextState) {
       // 모든 날짜를 보기 위해 아주 넓은 범위로 설정
       setOriginalDates({ start: startDate, end: endDate });
-      const wideStart = '1900-01-01';
-      const wideEnd = '2100-12-31';
-      setStartDate(wideStart);
-      setEndDate(wideEnd);
-      fetchLogs(wideStart, wideEnd);
+      setStartDate(WIDE_START);
+      setEndDate(WIDE_END);
+      fetchLogs(WIDE_START, WIDE_END);
     } else {
       // 이전 날짜 필터로 복구 (기본은 오늘)
       const prevStart = originalDates?.start || format(new Date(), 'yyyy-MM-dd');
@@ -239,6 +258,8 @@ export const LogsTab: React.FC = () => {
       setEndDate(prevEnd);
       fetchLogs(prevStart, prevEnd);
       setOriginalDates(null);
+      const isWide = prevStart === WIDE_START && prevEnd === WIDE_END;
+      setShowAllPeriod(isWide);
     }
   };
 
@@ -354,10 +375,23 @@ export const LogsTab: React.FC = () => {
             <Calendar className="w-4 h-4 text-blue-600 flex-shrink-0" />
             <span className="flex-1 text-left truncate flex items-center gap-2">
               <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-bold border border-blue-100 flex-shrink-0">
-                {showUnsignedOnly ? '모든 날짜' : '시작일 기준'}
+                {showUnsignedOnly || showAllPeriod ? '모든 날짜' : '시작일 기준'}
               </span>
-              {showUnsignedOnly ? '전체 기간 데이터' : (startDate === endDate ? startDate : `${startDate} ~ ${endDate}`)}
+              {showUnsignedOnly || showAllPeriod
+                ? '전체 기간 데이터'
+                : (startDate === endDate ? startDate : `${startDate} ~ ${endDate}`)}
             </span>
+          </Button>
+          <Button
+            variant="outline"
+            className={cn(
+              'gap-2 w-full md:w-auto font-bold h-11 md:h-10 transition-all shrink-0 px-3',
+              showAllPeriod ? 'border-blue-500 text-blue-700 bg-blue-50' : 'text-slate-600'
+            )}
+            onClick={toggleAllPeriodList}
+          >
+            <List className="w-4 h-4 text-blue-600 flex-shrink-0" />
+            <span className="text-xs">{showAllPeriod ? '오늘로' : '전체목록'}</span>
           </Button>
           <Button
             variant={showUnsignedOnly ? 'primary' : 'outline'}
