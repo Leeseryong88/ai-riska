@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import type { MeetingMinute } from '../_lib/types';
 import { currentYear } from '../_lib/utils';
 import { MeetingDetailModal } from './MeetingDetailModal';
-import { Pagination } from './Pagination';
+import { Pagination } from '@/components/ui/Pagination';
 
 const OTHERS_PAGE_SIZE = 10;
 

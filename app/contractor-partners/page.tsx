@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState, Suspense } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, Suspense } from 'react';
 import WorkspaceShell from '@/components/navigation/WorkspaceShell';
 import { useAuth } from '@/app/context/AuthContext';
 import { db } from '@/app/lib/firebase';
@@ -35,6 +35,7 @@ import { Button } from '@/app/safety-log/_components/ui/Button';
 import { PartnerWizardModal } from './_components/PartnerWizardModal';
 import { uploadPartnerFile, deletePartnerStorageFiles } from './_lib/storage';
 import { cn } from '@/app/safety-log/_lib/utils';
+import { Pagination } from '@/components/ui/Pagination';
 import {
   type ContractorPartner,
   type OptionalDocKey,
@@ -95,6 +96,8 @@ function ListDocCheckbox({ checked, label }: { checked: boolean; label: string }
   );
 }
 
+const PARTNERS_PAGE_SIZE = 10;
+
 const EVALUATION_THRESHOLD = 80;
 interface EvaluationCriterion {
   id: string;
@@ -132,6 +135,7 @@ function ContractorPartnersContent() {
   const [evaluationThreshold, setEvaluationThreshold] = useState(EVALUATION_THRESHOLD);
   const [criteriaDraft, setCriteriaDraft] = useState<EvaluationCriterion[]>(DEFAULT_EVALUATION_CRITERIA);
   const [thresholdDraft, setThresholdDraft] = useState(EVALUATION_THRESHOLD);
+  const [partnerListPage, setPartnerListPage] = useState(1);
 
   const criteriaTotal = evaluationCriteria.reduce((acc, item) => acc + item.maxScore, 0);
   const criteriaDraftTotal = criteriaDraft.reduce((acc, item) => acc + item.maxScore, 0);
@@ -159,6 +163,17 @@ function ContractorPartnersContent() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const partnerTotalPages = Math.max(1, Math.ceil(partners.length / PARTNERS_PAGE_SIZE));
+
+  useEffect(() => {
+    if (partnerListPage > partnerTotalPages) setPartnerListPage(partnerTotalPages);
+  }, [partnerListPage, partnerTotalPages]);
+
+  const pagedPartners = useMemo(() => {
+    const start = (partnerListPage - 1) * PARTNERS_PAGE_SIZE;
+    return partners.slice(start, start + PARTNERS_PAGE_SIZE);
+  }, [partners, partnerListPage]);
 
   useEffect(() => {
     const loadCriteria = async () => {
@@ -514,8 +529,9 @@ function ContractorPartnersContent() {
                   <p className="mt-1 text-xs text-slate-400">추가 버튼으로 필수·선택 서류를 함께 등록할 수 있습니다.</p>
                 </div>
               ) : (
+                <>
                 <ul className="space-y-2">
-                  {partners.map((p) => {
+                  {pagedPartners.map((p) => {
                     const planOk = hasRequiredDocFile(p, 'safetyPlan');
                     const riskOk = hasRequiredDocFile(p, 'riskAssessment');
                     const optSel = countOptionalCategoriesSelected(p);
@@ -595,6 +611,13 @@ function ContractorPartnersContent() {
                     );
                   })}
                 </ul>
+                <Pagination
+                  page={partnerListPage}
+                  totalPages={partnerTotalPages}
+                  onChange={setPartnerListPage}
+                  accentClass="bg-blue-600 text-white border-blue-600"
+                />
+                </>
               )}
             </motion.div>
           )}

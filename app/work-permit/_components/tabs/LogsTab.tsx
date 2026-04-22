@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, query, getDocs, orderBy, where, Timestamp, limit, startAfter, QueryDocumentSnapshot, DocumentData, doc, updateDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '@/app/lib/firebase';
 import { VisitorLog, VisitPurpose } from '../../_lib/types';
 import { Card, Button, Label, Input } from '../ui/Button';
 import { uploadBase64 } from '../../_lib/storage';
-import { Filter, Download, Eye, X, Loader2, Calendar, ChevronDown, PenTool, Save, ClipboardList, Printer, ShieldAlert } from 'lucide-react';
+import { Filter, Download, Eye, X, Loader2, Calendar, PenTool, Save, ClipboardList, Printer, ShieldAlert } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
 const SignaturePad = dynamic(() => import('../SignaturePad').then(mod => mod.SignaturePad), { ssr: false });
@@ -16,6 +16,7 @@ import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../_lib/utils';
+import { Pagination } from '@/components/ui/Pagination';
 // @ts-ignore
 // import html2pdf from 'html2pdf.js'; // Moved to dynamic import inside handlePrint
 
@@ -28,10 +29,8 @@ export const LogsTab: React.FC = () => {
   const [showSignModal, setShowSignModal] = useState(false);
   const [adminSignData, setAdminSignData] = useState<string>('');
   const [savingSign, setSavingSign] = useState(false);
-  const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
-  const [hasMore, setHasMore] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [listPage, setListPage] = useState(1);
   const [showUnsignedOnly, setShowUnsignedOnly] = useState(false);
   
   // Date filter states
@@ -44,7 +43,7 @@ export const LogsTab: React.FC = () => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         fetchPurposes(user.uid);
-        fetchLogs(startDate, endDate, false, user.uid);
+        fetchLogs(startDate, endDate, user.uid);
       } else {
         setPurposes([]);
         setLogs([]);
@@ -67,51 +66,45 @@ export const LogsTab: React.FC = () => {
     }
   };
 
-  const PAGE_SIZE = 50;
+  const FETCH_BATCH = 150;
+  const LIST_PAGE_SIZE = 10;
 
-  const fetchLogs = async (sDate = startDate, eDate = endDate, isMore = false, uid?: string) => {
+  const fetchLogs = async (sDate = startDate, eDate = endDate, uid?: string) => {
     const userId = uid || auth.currentUser?.uid;
     if (!userId) return;
 
-    if (isMore) {
-      setLoadingMore(true);
-    } else {
-      setLoading(true);
-      setLastDoc(null);
-    }
+    setLoading(true);
 
     try {
-      // 작업 시작일(data.work_start) 기준으로 쿼리
-      // sDate: yyyy-MM-dd, data.work_start: yyyy-MM-ddTHH:mm
-      let q = query(
-        collection(db, 'logs'),
-        where('ownerId', '==', userId),
-        where('data.work_start', '>=', sDate),
-        where('data.work_start', '<=', eDate + 'T23:59:59'),
-        orderBy('data.work_start', 'desc'),
-        limit(PAGE_SIZE)
-      );
+      const aggregated: VisitorLog[] = [];
+      let cursor: QueryDocumentSnapshot<DocumentData> | undefined;
+      while (true) {
+        let q = query(
+          collection(db, 'logs'),
+          where('ownerId', '==', userId),
+          where('data.work_start', '>=', sDate),
+          where('data.work_start', '<=', eDate + 'T23:59:59'),
+          orderBy('data.work_start', 'desc'),
+          limit(FETCH_BATCH)
+        );
+        if (cursor) q = query(q, startAfter(cursor));
 
-      if (isMore && lastDoc) {
-        q = query(q, startAfter(lastDoc));
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) break;
+
+        aggregated.push(
+          ...snapshot.docs.map((d) => ({ ...d.data(), id: d.id } as VisitorLog))
+        );
+        if (snapshot.docs.length < FETCH_BATCH) break;
+        cursor = snapshot.docs[snapshot.docs.length - 1];
       }
 
-      const snapshot = await getDocs(q);
-      const newLogs = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as VisitorLog));
-      
-      if (isMore) {
-        setLogs(prev => [...prev, ...newLogs]);
-      } else {
-        setLogs(newLogs);
-      }
-
-      setLastDoc(snapshot.docs[snapshot.docs.length - 1] || null);
-      setHasMore(snapshot.docs.length === PAGE_SIZE);
+      setLogs(aggregated);
+      setListPage(1);
     } catch (error) {
       console.error('Error fetching logs:', error);
     } finally {
       setLoading(false);
-      setLoadingMore(false);
     }
   };
 
@@ -237,14 +230,14 @@ export const LogsTab: React.FC = () => {
       const wideEnd = '2100-12-31';
       setStartDate(wideStart);
       setEndDate(wideEnd);
-      fetchLogs(wideStart, wideEnd, false);
+      fetchLogs(wideStart, wideEnd);
     } else {
       // 이전 날짜 필터로 복구 (기본은 오늘)
       const prevStart = originalDates?.start || format(new Date(), 'yyyy-MM-dd');
       const prevEnd = originalDates?.end || format(new Date(), 'yyyy-MM-dd');
       setStartDate(prevStart);
       setEndDate(prevEnd);
-      fetchLogs(prevStart, prevEnd, false);
+      fetchLogs(prevStart, prevEnd);
       setOriginalDates(null);
     }
   };
@@ -253,6 +246,21 @@ export const LogsTab: React.FC = () => {
     (selectedPurposeId === 'all' || log.purposeId === selectedPurposeId) &&
     (!showUnsignedOnly || !log.adminSignature)
   );
+
+  const listTotalPages = Math.max(1, Math.ceil(filteredLogs.length / LIST_PAGE_SIZE));
+
+  useEffect(() => {
+    setListPage(1);
+  }, [selectedPurposeId, showUnsignedOnly]);
+
+  useEffect(() => {
+    if (listPage > listTotalPages) setListPage(listTotalPages);
+  }, [listPage, listTotalPages]);
+
+  const pagedLogs = useMemo(() => {
+    const start = (listPage - 1) * LIST_PAGE_SIZE;
+    return filteredLogs.slice(start, start + LIST_PAGE_SIZE);
+  }, [filteredLogs, listPage]);
 
   const getFieldLabel = (key: string, log: VisitorLog) => {
     // 1. 해당 로그의 purpose 찾기
@@ -438,7 +446,7 @@ export const LogsTab: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                filteredLogs.map((log) => (
+                pagedLogs.map((log) => (
                   <tr key={log.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex flex-col gap-1">
@@ -512,7 +520,7 @@ export const LogsTab: React.FC = () => {
             기록이 없습니다.
           </div>
         ) : (
-          filteredLogs.map((log) => (
+          pagedLogs.map((log) => (
             <Card key={log.id} className="p-4" onClick={() => setSelectedLog(log)}>
               <div className="flex justify-between items-start mb-3">
                 <div className="flex flex-col gap-1">
@@ -577,18 +585,12 @@ export const LogsTab: React.FC = () => {
         )}
       </div>
 
-      {hasMore && (
-        <div className="flex justify-center pt-4 pb-10 md:pb-0 print:hidden">
-          <Button 
-            variant="outline" 
-            onClick={() => fetchLogs(startDate, endDate, true)}
-            isLoading={loadingMore}
-            className="gap-2 w-full md:w-auto h-11 md:h-10"
-          >
-            <ChevronDown className="w-4 h-4" /> 더 보기
-          </Button>
-        </div>
-      )}
+      <Pagination
+        page={listPage}
+        totalPages={listTotalPages}
+        onChange={setListPage}
+        accentClass="bg-blue-600 text-white border-blue-600"
+      />
 
       {/* Detail Modal */}
       <AnimatePresence>

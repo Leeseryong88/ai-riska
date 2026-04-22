@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   collection,
   query,
@@ -10,15 +10,19 @@ import {
   deleteDoc,
   doc,
   limit,
+  startAfter,
   updateDoc,
   serverTimestamp,
   deleteField,
+  type QueryDocumentSnapshot,
+  type DocumentData,
 } from 'firebase/firestore';
 import { db } from '@/app/lib/firebase';
 import { useAuth } from '@/app/context/AuthContext';
 import { CheckCircle2, Loader2, Trash2, X } from 'lucide-react';
 import { Button, Card } from '@/app/work-permit/_components/ui/Button';
 import { cn } from '@/app/work-permit/_lib/utils';
+import { Pagination } from '@/components/ui/Pagination';
 
 export interface WorkerFeedbackSubmission {
   id: string;
@@ -31,7 +35,8 @@ export interface WorkerFeedbackSubmission {
   acknowledgedAt?: unknown;
 }
 
-const PAGE_SIZE = 50;
+const FETCH_BATCH = 100;
+const LIST_PAGE_SIZE = 10;
 
 export function SubmissionsTab() {
   const { user } = useAuth();
@@ -39,21 +44,30 @@ export function SubmissionsTab() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<WorkerFeedbackSubmission | null>(null);
   const [ackLoadingId, setAckLoadingId] = useState<string | null>(null);
+  const [listPage, setListPage] = useState(1);
 
   const load = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     try {
-      const q = query(
-        collection(db, 'worker_feedback_submissions'),
-        where('managerId', '==', user.uid),
-        orderBy('createdAt', 'desc'),
-        limit(PAGE_SIZE)
-      );
-      const snap = await getDocs(q);
-      setItems(
-        snap.docs.map((d) => ({ id: d.id, ...d.data() })) as WorkerFeedbackSubmission[]
-      );
+      const aggregated: WorkerFeedbackSubmission[] = [];
+      let cursor: QueryDocumentSnapshot<DocumentData> | undefined;
+      while (true) {
+        let q = query(
+          collection(db, 'worker_feedback_submissions'),
+          where('managerId', '==', user.uid),
+          orderBy('createdAt', 'desc'),
+          limit(FETCH_BATCH)
+        );
+        if (cursor) q = query(q, startAfter(cursor));
+        const snap = await getDocs(q);
+        if (snap.empty) break;
+        aggregated.push(...(snap.docs.map((d) => ({ id: d.id, ...d.data() })) as WorkerFeedbackSubmission[]));
+        if (snap.docs.length < FETCH_BATCH) break;
+        cursor = snap.docs[snap.docs.length - 1];
+      }
+      setItems(aggregated);
+      setListPage(1);
     } catch (e) {
       console.error(e);
       alert('목록을 불러오지 못했습니다.');
@@ -73,6 +87,17 @@ export function SubmissionsTab() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
+
+  const totalListPages = Math.max(1, Math.ceil(items.length / LIST_PAGE_SIZE));
+
+  useEffect(() => {
+    if (listPage > totalListPages) setListPage(totalListPages);
+  }, [listPage, totalListPages]);
+
+  const pagedItems = useMemo(() => {
+    const start = (listPage - 1) * LIST_PAGE_SIZE;
+    return items.slice(start, start + LIST_PAGE_SIZE);
+  }, [items, listPage]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('이 의견을 삭제할까요?')) return;
@@ -146,7 +171,7 @@ export function SubmissionsTab() {
   return (
     <>
       <ul className="space-y-3">
-        {items.map((row) => (
+        {pagedItems.map((row) => (
           <li key={row.id}>
             <Card
               role="button"
@@ -225,6 +250,13 @@ export function SubmissionsTab() {
           </li>
         ))}
       </ul>
+
+      <Pagination
+        page={listPage}
+        totalPages={totalListPages}
+        onChange={setListPage}
+        accentClass="bg-blue-600 text-white border-blue-600"
+      />
 
       {selected && (
         <div

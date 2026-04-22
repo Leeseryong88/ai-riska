@@ -83,13 +83,12 @@ export const Pagination: React.FC<PaginationProps> = ({
 };
 
 function buildPageList(current: number, total: number): (number | '...')[] {
-  // 페이지가 7개 이하이면 전체를 그대로 보여준다.
   if (total <= 7) {
     return Array.from({ length: total }, (_, i) => i + 1);
   }
 
   const pages: (number | '...')[] = [];
-  const window = 1; // 현재 페이지 좌우에 보여줄 개수
+  const window = 1;
 
   const first = 1;
   const last = total;

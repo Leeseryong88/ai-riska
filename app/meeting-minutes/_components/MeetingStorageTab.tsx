@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { FileText, Save, Image as ImageIcon, Paperclip, Search } from 'lucide-react';
 import { SaveMeetingModal } from './SaveMeetingModal';
 import { MeetingDetailModal } from './MeetingDetailModal';
-import { Pagination } from './Pagination';
+import { Pagination } from '@/components/ui/Pagination';
 import { MEETING_TYPE_CYCLE, MEETING_TYPE_LABEL, type MeetingMinute, type MeetingType } from '../_lib/types';
 
 const PAGE_SIZE = 10;

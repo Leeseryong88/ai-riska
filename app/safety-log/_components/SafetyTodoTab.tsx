@@ -34,8 +34,10 @@ import { Button } from './ui/Button';
 import { cn } from '../_lib/utils';
 import type { SafetyManagerTodo, TodoFilter } from '../_lib/todoTypes';
 import { TodoCalendar, toDayKey } from './TodoCalendar';
+import { Pagination } from '@/components/ui/Pagination';
 
 const PAGE_LIMIT = 200;
+const LIST_PAGE_SIZE = 10;
 
 function dueDateToDayKey(due: unknown): string | null {
   if (!due) return null;
@@ -169,6 +171,7 @@ export function SafetyTodoTab() {
   const draftDueInputRef = useRef<HTMLInputElement>(null);
   /** 목록에서 '메모 있음' 클릭 시 아래로 펼쳐 보여 줄 항목 id */
   const [memoPreviewId, setMemoPreviewId] = useState<string | null>(null);
+  const [listPage, setListPage] = useState(1);
 
   const load = useCallback(async () => {
     if (!user) {
@@ -232,6 +235,21 @@ export function SafetyTodoTab() {
     }
     return list;
   }, [sorted, filter, selectedDayKey]);
+
+  const totalTodoPages = Math.max(1, Math.ceil(filtered.length / LIST_PAGE_SIZE));
+
+  useEffect(() => {
+    setListPage(1);
+  }, [filter, selectedDayKey]);
+
+  useEffect(() => {
+    if (listPage > totalTodoPages) setListPage(totalTodoPages);
+  }, [listPage, totalTodoPages]);
+
+  const pagedFiltered = useMemo(() => {
+    const start = (listPage - 1) * LIST_PAGE_SIZE;
+    return filtered.slice(start, start + LIST_PAGE_SIZE);
+  }, [filtered, listPage]);
 
   const handleSelectDayFromCalendar = useCallback((dayKey: string | null) => {
     setSelectedDayKey(dayKey);
@@ -597,8 +615,9 @@ export function SafetyTodoTab() {
             )}
           </div>
         ) : (
+          <>
           <ul className="space-y-2">
-            {filtered.map((row) => {
+            {pagedFiltered.map((row) => {
               const idx = sorted.findIndex((t) => t.id === row.id);
               const canUp = idx > 0;
               const canDown = idx >= 0 && idx < sorted.length - 1;
@@ -745,6 +764,13 @@ export function SafetyTodoTab() {
               );
             })}
           </ul>
+          <Pagination
+            page={listPage}
+            totalPages={totalTodoPages}
+            onChange={setListPage}
+            accentClass="bg-blue-600 text-white border-blue-600"
+          />
+          </>
         )}
       </div>
     </div>
