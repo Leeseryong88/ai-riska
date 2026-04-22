@@ -219,11 +219,11 @@ const Area: React.FC<{ name: string; rows?: number; placeholder?: string }> = ({
   rows = 3,
   placeholder,
 }) => {
-  const { getValue, setValue } = useEdit();
+  const { getValue, setValue, editing } = useEdit();
   return (
     <textarea
       name={name}
-      className={textareaCls}
+      className={`${textareaCls} ${editing ? 'resize min-h-[3rem]' : 'resize-none'}`}
       rows={rows}
       value={getValue(name)}
       onChange={(e) => setValue(name, e.target.value)}

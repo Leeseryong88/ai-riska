@@ -112,6 +112,11 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({ type, onClose }) =
       }
     });
 
+    // 예시(placeholder) 문구는 인쇄물에 나오지 않도록 제거
+    clone.querySelectorAll('input, textarea').forEach((el) => {
+      el.removeAttribute('placeholder');
+    });
+
     const printWindow = window.open('', '_blank', 'width=900,height=1000');
     if (!printWindow) return;
     const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
@@ -120,6 +125,7 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({ type, onClose }) =
     printWindow.document.write(`<!doctype html><html><head><meta charset="utf-8"/><title>${MEETING_TYPE_LABEL[type]} 회의록 양식</title>${styles}<style>
       body { background: white; margin: 0; padding: 24px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       input, textarea, select { border: none !important; outline: none !important; background: transparent !important; }
+      input::placeholder, textarea::placeholder { color: transparent !important; opacity: 0 !important; -webkit-text-fill-color: transparent !important; }
       input[type="date"]::-webkit-calendar-picker-indicator,
       input[type="datetime-local"]::-webkit-calendar-picker-indicator { display: none; }
       @page { size: A4; margin: 12mm; }
