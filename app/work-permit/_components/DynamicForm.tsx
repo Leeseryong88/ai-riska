@@ -5,6 +5,41 @@ import { FormField } from '../_lib/types';
 import { Input, Label } from './ui/Button';
 import { cn } from '../_lib/utils';
 
+/** datetime-local 값에서 yyyy-MM-dd만 추출 (date input min/max용) */
+function sliceDateKey(v: string): string | undefined {
+  if (!v) return undefined;
+  const t = v.indexOf('T');
+  if (t >= 0) return v.slice(0, 10);
+  return v.length >= 10 ? v.slice(0, 10) : undefined;
+}
+
+/** 작업 시작/종료 필드에 브라우저 네이티브 제한(min/max) 적용 */
+function workPeriodInputBounds(
+  field: FormField,
+  values: Record<string, any>
+): { min?: string; max?: string } {
+  const { id, type } = field;
+  if (type === 'datetime-local') {
+    if (id === 'work_end' && values.work_start) return { min: values.work_start };
+    if (id === 'work_start' && values.work_end) return { max: values.work_end };
+  }
+  if (type === 'date') {
+    if (id === 'work_end_date') {
+      const min =
+        values.work_start_date ||
+        (values.work_start ? sliceDateKey(String(values.work_start)) : undefined);
+      return min ? { min } : {};
+    }
+    if (id === 'work_start_date') {
+      const max =
+        values.work_end_date ||
+        (values.work_end ? sliceDateKey(String(values.work_end)) : undefined);
+      return max ? { max } : {};
+    }
+  }
+  return {};
+}
+
 interface DynamicFormProps {
   fields: FormField[];
   values: Record<string, any>;
@@ -98,6 +133,9 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ fields, values, onChan
               onChange={(e) => onChange(field.id, e.target.value)}
               className={cn(errors?.[field.id] && 'border-red-500')}
               required={field.required}
+              {...(field.type === 'datetime-local' || field.type === 'date'
+                ? workPeriodInputBounds(field, values)
+                : {})}
             />
           )}
           

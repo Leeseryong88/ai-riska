@@ -108,9 +108,35 @@ export default function VisitorFormPage() {
   } : null;
 
   const handleFieldChange = (id: string, value: any) => {
-    setFormData(prev => ({ ...prev, [id]: value }));
+    setFormData((prev) => {
+      const next = { ...prev, [id]: value };
+
+      const start = next.work_start;
+      const end = next.work_end;
+      if (start && end) {
+        const ts = new Date(start as string).getTime();
+        const te = new Date(end as string).getTime();
+        if (!Number.isNaN(ts) && !Number.isNaN(te) && ts > te) {
+          if (id === 'work_start') next.work_end = start;
+          else next.work_end = start;
+        }
+      }
+
+      const sd = next.work_start_date;
+      const ed = next.work_end_date;
+      if (sd && ed) {
+        const dts = new Date(sd as string).setHours(0, 0, 0, 0);
+        const dte = new Date(ed as string).setHours(0, 0, 0, 0);
+        if (!Number.isNaN(dts) && !Number.isNaN(dte) && dts > dte) {
+          if (id === 'work_start_date') next.work_end_date = sd;
+          else next.work_end_date = sd;
+        }
+      }
+
+      return next;
+    });
     if (errors[id]) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const next = { ...prev };
         delete next[id];
         return next;
@@ -127,6 +153,19 @@ export default function VisitorFormPage() {
         newErrors[field.id] = '필수 입력 항목입니다.';
       }
     });
+
+    if (formData.work_start && formData.work_end) {
+      if (new Date(formData.work_start).getTime() > new Date(formData.work_end).getTime()) {
+        newErrors.work_end = '종료 일시는 시작 일시와 같거나 이후여야 합니다.';
+      }
+    }
+    if (formData.work_start_date && formData.work_end_date) {
+      const d0 = new Date(formData.work_start_date).setHours(0, 0, 0, 0);
+      const d1 = new Date(formData.work_end_date).setHours(0, 0, 0, 0);
+      if (!Number.isNaN(d0) && !Number.isNaN(d1) && d0 > d1) {
+        newErrors.work_end_date = '종료일은 시작일과 같거나 이후여야 합니다.';
+      }
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;

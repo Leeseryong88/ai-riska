@@ -532,13 +532,32 @@ export default function VisualDashboard() {
                       <p className="text-sm font-bold">작업허가서가 없습니다.</p>
                     </div>
                   ) : (
-                    filteredPermits.map((permit) => (
+                    filteredPermits.map((permit) => {
+                      const permitKind =
+                        permit.purposeName ||
+                        permit.data?.purpose ||
+                        '종류 미기재';
+                      const workerLabel =
+                        permit.visitorName ||
+                        permit.data?.worker_name ||
+                        '이름 미기재';
+                      const companyLabel =
+                        permit.data?.worker_company ||
+                        permit.data?.company_name ||
+                        '업체 미기재';
+                      return (
                       <div 
                         key={permit.id}
                         className="flex flex-col gap-2 p-4 rounded-2xl border border-slate-100 bg-white hover:border-amber-200 transition-all shadow-sm"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
+                          <span
+                            className={`text-xs font-black px-2 py-0.5 rounded-full ${
+                              permit.adminSignature
+                                ? 'text-emerald-700 bg-emerald-100'
+                                : 'text-amber-700 bg-amber-50'
+                            }`}
+                          >
                             {permit.adminSignature ? '승인됨' : '대기중'}
                           </span>
                           <div className="flex flex-col items-end gap-0.5">
@@ -548,17 +567,16 @@ export default function VisualDashboard() {
                             </span>
                           </div>
                         </div>
-                        <span className="text-sm font-bold text-slate-700">
-                          {permit.data?.purpose || '작업 목적 미기재'}
-                        </span>
-                        <div className="flex items-center gap-2 text-[10px] text-slate-400">
-                          <Users className="h-3 w-3" />
-                          <span>{permit.data?.worker_name || '작업자 미기재'}</span>
-                          <span>|</span>
-                          <span>{permit.data?.company_name || '업체 미기재'}</span>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-bold text-slate-700">
+                          <span>{permitKind}</span>
+                          <span className="text-slate-300 font-normal">·</span>
+                          <span className="font-semibold text-slate-600">{workerLabel}</span>
+                          <span className="text-slate-300 font-normal">·</span>
+                          <span className="font-semibold text-slate-600">{companyLabel}</span>
                         </div>
                       </div>
-                    ))
+                      );
+                    })
                   )}
                 </motion.div>
               )}
