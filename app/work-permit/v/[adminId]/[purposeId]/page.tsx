@@ -8,7 +8,7 @@ import { VisitPurpose, AdminUser } from '../../../_lib/types';
 import { Card, Button } from '../../../_components/ui/Button';
 import { DynamicForm } from '../../../_components/DynamicForm';
 import { uploadBase64 } from '../../../_lib/storage';
-import { ChevronLeft, Loader2, Download, Bell, ClipboardList, AlertCircle, ShieldAlert, Info } from 'lucide-react';
+import { ChevronLeft, ChevronDown, Loader2, Download, Bell, ClipboardList, AlertCircle, ShieldAlert, Info } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
 const SignaturePad = dynamic(() => import('../../../_components/SignaturePad').then(mod => mod.SignaturePad), { ssr: false });
@@ -31,7 +31,8 @@ export default function VisitorFormPage() {
   const [signature, setSignature] = useState<string>('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submittedLog, setSubmittedLog] = useState<any>(null);
-  
+  const [showSubmissionPreview, setShowSubmissionPreview] = useState(false);
+
   // Modal states
   const [showSafetyInfo, setShowSafetyInfo] = useState(true);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
@@ -182,6 +183,7 @@ export default function VisitorFormPage() {
       });
       
       setSubmittedLog(logData);
+      setShowSubmissionPreview(false);
       setSubmitted(true);
       setShowSignatureModal(false);
     } catch (error) {
@@ -258,12 +260,41 @@ export default function VisitorFormPage() {
               className="h-auto w-full object-contain"
             />
           </a>
-          {/* Document Container for Image Generation */}
-          <div 
-            id="submission-summary" 
-            className="bg-white shadow-2xl border border-gray-200 p-6 md:p-12 w-full mx-auto"
-            style={{ minHeight: '297mm' }}
-          >
+          <AnimatePresence mode="wait">
+            {!showSubmissionPreview ? (
+              <motion.div
+                key="submission-collapsed"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.2 }}
+                className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-md sm:flex-row sm:items-center sm:justify-between"
+              >
+                <p className="text-base font-bold text-gray-900">작업허가서 제출이 완료됐습니다.</p>
+                <Button
+                  type="button"
+                  className="h-11 w-full shrink-0 gap-1.5 sm:w-auto sm:min-w-[7.5rem]"
+                  onClick={() => setShowSubmissionPreview(true)}
+                >
+                  <ChevronDown className="h-4 w-4" />
+                  펼쳐보기
+                </Button>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="submission-expanded"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.22 }}
+                className="w-full space-y-6"
+              >
+                {/* Document Container for Image Generation */}
+                <div
+                  id="submission-summary"
+                  className="bg-white shadow-2xl border border-gray-200 p-6 md:p-12 w-full mx-auto"
+                  style={{ minHeight: '297mm' }}
+                >
             {/* Document Header */}
             <div className="text-center space-y-4 mb-10 border-b-4 border-double border-gray-900 pb-6">
               <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-[0.2em] underline underline-offset-8">안전작업 허가서</h1>
@@ -417,17 +448,20 @@ export default function VisitorFormPage() {
                 <p className="text-[9px] text-gray-400 pt-4">제출일: {new Date().toLocaleString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
               </div>
             </section>
-          </div>
+                </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col gap-3 px-4">
-            <Button className="w-full h-12 gap-2 shadow-lg" onClick={handleDownloadImage}>
-              <Download className="w-4 h-4" /> 이미지로 저장하기
-            </Button>
-            <Button variant="outline" className="w-full h-12 bg-white" onClick={() => router.push(`/work-permit/v/${adminId}`)}>
-              처음으로 돌아가기
-            </Button>
-          </div>
+                {/* Action Buttons */}
+                <div className="flex flex-col gap-3 px-4">
+                  <Button className="w-full h-12 gap-2 shadow-lg" onClick={handleDownloadImage}>
+                    <Download className="w-4 h-4" /> 이미지로 저장하기
+                  </Button>
+                  <Button variant="outline" className="w-full h-12 bg-white" onClick={() => router.push(`/work-permit/v/${adminId}`)}>
+                    처음으로 돌아가기
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       </div>
     );
