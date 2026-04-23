@@ -14,10 +14,14 @@ import { db } from '@/app/lib/firebase';
 import { collection, addDoc, serverTimestamp, getDocs, query, where, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import AIDisclaimer from '@/components/common/AIDisclaimer';
 import {
+  applyOneToFiveToContentEditableCell,
   computeRiskLevelLabel,
   enrichTableRowsWithRisk,
   inferAssessmentMethod,
+  onBeforeInputSpCell,
+  onPasteSpCell,
 } from '@/app/lib/risk-level';
+import { installAssessmentRowDeleteColumn } from '@/app/lib/assessment-table-row-delete-ui';
 
 // 분석 항목 인터페이스 정의
 interface AnalysisItem {
@@ -1029,7 +1033,8 @@ function ClientSideContent() {
     bodyRows.forEach((tr) => {
       const tds = tr.querySelectorAll<HTMLElement>('td');
       if (tds.length < 6) return;
-      tds.forEach((el, col) => {
+      for (let col = 0; col < 6; col++) {
+        const el = tds[col];
         if (col === 4) {
           el.contentEditable = 'false';
           el.removeAttribute('contenteditable');
@@ -1043,27 +1048,76 @@ function ClientSideContent() {
           el.style.outline = '1px dashed rgba(59, 130, 246, 0.45)';
           el.style.outlineOffset = '-1px';
         }
-      });
+      }
       applyRow(tr);
     });
+    const unDelete = installAssessmentRowDeleteColumn(table, root, (rowIndex) => {
+      const fromDom = extractTableDataFromContainer(
+        finalAnalysisTableRef.current,
+        assessmentMethod
+      );
+      if (!fromDom || rowIndex < 0 || rowIndex >= fromDom.length) return;
+      fromDom.splice(rowIndex, 1);
+      applyTableChanges(fromDom);
+    });
+    const onKeydownSp = (e: KeyboardEvent) => {
+      const n = e.target as Node;
+      const host =
+        n.nodeType === Node.TEXT_NODE ? (n.parentElement as HTMLElement | null) : (n as HTMLElement);
+      const td = host?.closest?.('td') as HTMLTableCellElement | null;
+      if (!td || !root.contains(td)) return;
+      const tr = td.closest('tr') as HTMLTableRowElement | null;
+      if (!tr || tr.closest('table') !== table) return;
+      const tds = tr.querySelectorAll('td');
+      const col = Array.prototype.indexOf.call(tds, td);
+      if (col !== 2 && col !== 3) return;
+      if (e.isComposing) return;
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        return;
+      }
+      if (e.key.length === 1 && !'12345'.includes(e.key)) {
+        e.preventDefault();
+        return;
+      }
+      if (e.ctrlKey || e.metaKey) return;
+    };
     const onInput = (e: Event) => {
       const t = e.target as HTMLElement;
       if (!t.closest('tbody')) return;
       const tr = t.closest('tr') as HTMLTableRowElement | null;
       if (!tr || !tr.closest('table')?.isSameNode(table)) return;
-      const targetTd = t.closest('td');
+      const targetTd = t.closest('td') as HTMLTableCellElement | null;
       if (!targetTd) return;
       const tds = tr.querySelectorAll('td');
       const col = Array.prototype.indexOf.call(tds, targetTd);
       if (col !== 2 && col !== 3) return;
+      if ((e as InputEvent).isComposing) return;
+      applyOneToFiveToContentEditableCell(targetTd);
       tds[4].textContent = computeRiskLevelLabel(
         tds[2].textContent?.trim() || '',
         tds[3].textContent?.trim() || '',
         assessmentMethod
       );
     };
+    const onSpUpdateFinal = (ctx: { tr: HTMLTableRowElement; tds: NodeListOf<HTMLElement> }) => {
+      ctx.tds[4].textContent = computeRiskLevelLabel(
+        ctx.tds[2].textContent?.trim() || '',
+        ctx.tds[3].textContent?.trim() || '',
+        assessmentMethod
+      );
+    };
+    const onBefore = (e: Event) => onBeforeInputSpCell(e, root, table, onSpUpdateFinal);
+    const onPasteE = (e: ClipboardEvent) => onPasteSpCell(e, root, table, onSpUpdateFinal);
+    root.addEventListener('beforeinput', onBefore, true);
+    root.addEventListener('paste', onPasteE, true);
+    root.addEventListener('keydown', onKeydownSp, true);
     root.addEventListener('input', onInput, true);
     return () => {
+      unDelete();
+      root.removeEventListener('beforeinput', onBefore, true);
+      root.removeEventListener('paste', onPasteE, true);
+      root.removeEventListener('keydown', onKeydownSp, true);
       root.removeEventListener('input', onInput, true);
       bodyRows.forEach((tr) => {
         tr.querySelectorAll<HTMLElement>('td').forEach((el) => {
@@ -1093,7 +1147,8 @@ function ClientSideContent() {
     bodyRows.forEach((tr) => {
       const tds = tr.querySelectorAll<HTMLElement>('td');
       if (tds.length < 6) return;
-      tds.forEach((el, col) => {
+      for (let col = 0; col < 6; col++) {
+        const el = tds[col];
         if (col === 4) {
           el.contentEditable = 'false';
           el.removeAttribute('contenteditable');
@@ -1107,23 +1162,78 @@ function ClientSideContent() {
           el.style.outline = '1px dashed rgba(59, 130, 246, 0.45)';
           el.style.outlineOffset = '-1px';
         }
-      });
+      }
       applyRiskToRow(tr, table);
     });
+    const unDelete = installAssessmentRowDeleteColumn(table, root, (rowIndex) => {
+      const fromDom = extractTableDataFromContainer(
+        savedAssessmentTableRef.current,
+        'infer'
+      );
+      if (!fromDom || rowIndex < 0 || rowIndex >= fromDom.length) return;
+      fromDom.splice(rowIndex, 1);
+      const method = inferAssessmentMethod(fromDom);
+      const newHtml = generateTableHTML(
+        fromDom,
+        approvalCount,
+        showWorkerSignatures,
+        method
+      );
+      setEditableTableData(fromDom);
+      setSelectedAssessment((prev) =>
+        prev ? { ...prev, tableData: fromDom, tableHTML: newHtml } : null
+      );
+    });
+    const onKeydownSp = (e: KeyboardEvent) => {
+      const n = e.target as Node;
+      const host =
+        n.nodeType === Node.TEXT_NODE ? (n.parentElement as HTMLElement | null) : (n as HTMLElement);
+      const td = host?.closest?.('td') as HTMLTableCellElement | null;
+      if (!td || !root.contains(td)) return;
+      const tr = td.closest('tr') as HTMLTableRowElement | null;
+      if (!tr || tr.closest('table') !== table) return;
+      const tds = tr.querySelectorAll('td');
+      const col = Array.prototype.indexOf.call(tds, td);
+      if (col !== 2 && col !== 3) return;
+      if (e.isComposing) return;
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        return;
+      }
+      if (e.key.length === 1 && !'12345'.includes(e.key)) {
+        e.preventDefault();
+        return;
+      }
+      if (e.ctrlKey || e.metaKey) return;
+    };
     const onInput = (e: Event) => {
       const t = e.target as HTMLElement;
       if (!t.closest('tbody')) return;
       const tr = t.closest('tr') as HTMLTableRowElement | null;
       if (!tr || !tr.closest('table')?.isSameNode(table)) return;
-      const targetTd = t.closest('td');
+      const targetTd = t.closest('td') as HTMLTableCellElement | null;
       if (!targetTd) return;
       const tds = tr.querySelectorAll('td');
       const col = Array.prototype.indexOf.call(tds, targetTd);
       if (col !== 2 && col !== 3) return;
+      if ((e as InputEvent).isComposing) return;
+      applyOneToFiveToContentEditableCell(targetTd);
       applyRiskToRow(tr, table);
     };
+    const onSpUpdateSaved = (ctx: { tr: HTMLTableRowElement; tds: NodeListOf<HTMLElement> }) => {
+      applyRiskToRow(ctx.tr, table);
+    };
+    const onBefore = (e: Event) => onBeforeInputSpCell(e, root, table, onSpUpdateSaved);
+    const onPasteE = (e: ClipboardEvent) => onPasteSpCell(e, root, table, onSpUpdateSaved);
+    root.addEventListener('beforeinput', onBefore, true);
+    root.addEventListener('paste', onPasteE, true);
+    root.addEventListener('keydown', onKeydownSp, true);
     root.addEventListener('input', onInput, true);
     return () => {
+      unDelete();
+      root.removeEventListener('beforeinput', onBefore, true);
+      root.removeEventListener('paste', onPasteE, true);
+      root.removeEventListener('keydown', onKeydownSp, true);
       root.removeEventListener('input', onInput, true);
       bodyRows.forEach((tr) => {
         tr.querySelectorAll<HTMLElement>('td').forEach((el) => {
