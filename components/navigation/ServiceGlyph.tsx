@@ -146,6 +146,19 @@ export default function ServiceGlyph({ icon, className = 'h-5 w-5' }: ServiceGly
         </svg>
       );
 
+    case 'hazardousMachinery':
+      /* 유해위험기계기구: 톱니 + 경고 */
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+          <path
+            {...stroke}
+            d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
+          />
+          <circle {...stroke} cx="12" cy="12" r="3" />
+          <path {...stroke} d="M12 9V6M12 18v-3" />
+        </svg>
+      );
+
     case 'storage':
       /* 저장소: 아카이브 박스 */
       return (

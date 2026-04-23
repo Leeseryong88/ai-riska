@@ -18,6 +18,7 @@ export type ServiceIcon =
   | 'storage'
   | 'meeting'
   | 'orgChart'
+  | 'hazardousMachinery'
   | 'contact';
 
 export interface ServiceDefinition {
@@ -207,6 +208,21 @@ export const services: ServiceDefinition[] = [
     featured: true,
     accent: { from: 'from-fuchsia-500', to: 'to-purple-600' },
     highlights: ['분기·월별 주기 관리', '양식 인쇄', '파일 업로드'],
+  },
+  {
+    id: 'hazardous-machinery',
+    title: '유해위험기계기구',
+    shortTitle: '유해위험기계기구',
+    description: '유해·위험기계기구 관리 기능을 제공할 예정입니다.',
+    href: '/hazardous-machinery',
+    category: 'document',
+    status: 'stable',
+    icon: 'hazardousMachinery',
+    mobilePriority: 'low',
+    desktopMode: 'workspace',
+    featured: true,
+    accent: { from: 'from-amber-600', to: 'to-rose-600' },
+    highlights: ['기계기구', '대장·점검', '예정'],
   },
   {
     id: 'work-permit',
