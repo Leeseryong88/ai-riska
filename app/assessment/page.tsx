@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useCallback, useRef, Suspense } from 'react';
 import ImageUploader from '@/components/ImageUploader';
 import ImageAnalysis from '@/components/ImageAnalysis';
 import Image from 'next/image';
@@ -13,6 +13,11 @@ import { apiAuthHeaders } from '@/lib/api-client';
 import { db } from '@/app/lib/firebase';
 import { collection, addDoc, serverTimestamp, getDocs, query, where, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import AIDisclaimer from '@/components/common/AIDisclaimer';
+import {
+  computeRiskLevelLabel,
+  enrichTableRowsWithRisk,
+  inferAssessmentMethod,
+} from '@/app/lib/risk-level';
 
 // 분석 항목 인터페이스 정의
 interface AnalysisItem {
@@ -193,6 +198,10 @@ function ClientSideContent() {
   
   // 결과 영역으로 스크롤하기 위한 ref
   const resultsRef = useRef<HTMLDivElement>(null);
+  /** 최종 위험성평가표 HTML에서 직접 편집할 때 컨테이너 (DOM에서 행 추출) */
+  const finalAnalysisTableRef = useRef<HTMLDivElement>(null);
+  /** 저장된 평가 상세에서 직접 편집할 때 컨테이너 */
+  const savedAssessmentTableRef = useRef<HTMLDivElement>(null);
   
   const router = useRouter();
   const pathname = usePathname();
@@ -202,8 +211,13 @@ function ClientSideContent() {
   // 모바일 환경 감지를 위한 상태 추가
   const [isMobileView, setIsMobileView] = useState(false);
 
-  // 테이블 데이터를 HTML로 변환하는 헬퍼 함수
-  const generateTableHTML = (data: any[], appCount: number, workerSigs: boolean) => {
+  // 테이블 데이터를 HTML로 변환하는 헬퍼 함수 (methodForRisk: 저장된 항목 등 상세 화면에서 빈도강도법이 다를 때 지정)
+  const generateTableHTML = (
+    data: any[],
+    appCount: number,
+    workerSigs: boolean,
+    methodForRisk: '3x3' | '5x5' = assessmentMethod
+  ) => {
     let approvalHTML = '';
     if (appCount > 0) {
       approvalHTML = `
@@ -280,7 +294,11 @@ function ClientSideContent() {
               <td style="padding: 10px 8px; border: 1px solid #94A3B8; color: #1E293B; font-size: 12px;">${row.riskFactor}</td>
               <td style="padding: 10px 4px; border: 1px solid #94A3B8; color: #1E293B; font-size: 12px; text-align: center;">${row.severity}</td>
               <td style="padding: 10px 4px; border: 1px solid #94A3B8; color: #1E293B; font-size: 12px; text-align: center;">${row.probability}</td>
-              <td style="padding: 10px 4px; border: 1px solid #94A3B8; color: #1E293B; font-size: 12px; text-align: center;">${row.riskLevel}</td>
+              <td style="padding: 10px 4px; border: 1px solid #94A3B8; color: #1E293B; font-size: 12px; text-align: center;">${computeRiskLevelLabel(
+                String(row.severity ?? ''),
+                String(row.probability ?? ''),
+                methodForRisk
+              )}</td>
               <td style="padding: 10px 8px; border: 1px solid #94A3B8; color: #1E293B; font-size: 12px; line-height: 1.5;">${row.countermeasure}</td>
             </tr>
           `).join('')}
@@ -295,6 +313,51 @@ function ClientSideContent() {
         ${workerSignatureHTML}
       </div>
     `;
+  };
+
+  /** 본문 테이블 추출. mode가 infer면 중대성·가능성으로 3x3/5x5를 추론, 아니면 선택된 평가방식(빈도강도법)으로 위험도를 계산합니다. */
+  const extractTableDataFromContainer = (
+    container: HTMLElement | null,
+    mode: '3x3' | '5x5' | 'infer' = 'infer'
+  ) => {
+    if (!container) return null;
+    const mainTable =
+      container.querySelector<HTMLTableElement>('table.main-assessment-table') ||
+      Array.from(container.querySelectorAll<HTMLTableElement>('table')).find((t) => {
+        const tr = t.querySelector('tbody tr');
+        return tr != null && tr.querySelectorAll('td').length >= 6;
+      }) ||
+      null;
+    if (!mainTable) return null;
+    const tbody = mainTable.querySelector('tbody');
+    if (!tbody) return null;
+    const rows = tbody.querySelectorAll('tr');
+    const data: {
+      processName: string;
+      riskFactor: string;
+      severity: string;
+      probability: string;
+      riskLevel: string;
+      countermeasure: string;
+    }[] = [];
+    rows.forEach((row) => {
+      const cells = row.querySelectorAll('td');
+      if (cells.length < 6) return;
+      data.push({
+        processName: cells[0]?.textContent?.trim() || '',
+        riskFactor: cells[1]?.textContent?.trim() || '',
+        severity: cells[2]?.textContent?.trim() || '',
+        probability: cells[3]?.textContent?.trim() || '',
+        riskLevel: '',
+        countermeasure: cells[5]?.textContent?.trim() || '',
+      });
+    });
+    if (data.length === 0) return null;
+    const method = mode === 'infer' ? inferAssessmentMethod(data) : mode;
+    return data.map((r) => ({
+      ...r,
+      riskLevel: computeRiskLevelLabel(r.severity, r.probability, method),
+    }));
   };
 
   // 모바일에서 제목을 숨길 '작성 단계'인지 확인
@@ -862,17 +925,21 @@ function ClientSideContent() {
     }
   };
 
-  // 최종 위험성평가표 수정 모드 전환
+  // 최종 위험성평가표 수정 모드 전환 (표 HTML 그대로 contentEditable로 편집, 완료 시 DOM → 데이터 반영)
   const toggleEditMode = () => {
     if (!isEditingFinal) {
       // 수정 모드로 전환할 때 HTML에서 테이블 데이터 추출
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = finalAnalysis || '';
       
-      // 결재칸이 추가되었을 경우를 대비하여 본문 테이블을 정확히 찾기 위해 .main-assessment-table 클래스 사용
-      const table = tempDiv.querySelector('.main-assessment-table') || tempDiv.querySelector('table');
+      // 결재칸이 추가되었을 경우를 대비하여 본문 테이블을 정확히 찾기
+      const table =
+        tempDiv.querySelector('.main-assessment-table') ||
+        Array.from(tempDiv.querySelectorAll('table')).find((t) => {
+          const tr = t.querySelector('tbody tr');
+          return tr != null && tr.querySelectorAll('td').length >= 6;
+        });
       if (!table) {
-        // 만약 테이블을 찾을 수 없다면 기존에 가지고 있던 editableTableData를 그대로 유지 (초기화 방지)
         if (editableTableData && editableTableData.length > 0) {
           setIsEditingFinal(true);
           return;
@@ -890,67 +957,193 @@ function ClientSideContent() {
       }
       
       const rows = tbody.querySelectorAll('tr');
-      const extractedData = Array.from(rows).map(row => {
+      const extractedData = Array.from(rows).map((row) => {
         const cells = row.querySelectorAll('td');
-        
         return {
           processName: cells[0]?.textContent?.trim() || '',
           riskFactor: cells[1]?.textContent?.trim() || '',
           severity: cells[2]?.textContent?.trim() || '',
           probability: cells[3]?.textContent?.trim() || '',
-          riskLevel: cells[4]?.textContent?.trim() || '',
-          countermeasure: cells[5]?.textContent?.trim() || ''
+          countermeasure: cells[5]?.textContent?.trim() || '',
         };
       });
-      
-      setEditableTableData(extractedData);
+      setEditableTableData(enrichTableRowsWithRisk(extractedData, assessmentMethod));
     } else {
-      // 수정 모드에서 나갈 때 변경사항 적용
-      applyTableChanges();
+      // 완료: 인라인으로 편집된 셀 내용을 추출해 최종 HTML에 반영
+      const fromDom = extractTableDataFromContainer(
+        finalAnalysisTableRef.current,
+        assessmentMethod
+      );
+      if (fromDom && fromDom.length > 0) {
+        applyTableChanges(fromDom);
+      } else {
+        applyTableChanges();
+      }
     }
     
     setIsEditingFinal(!isEditingFinal);
   };
   
-  // 테이블 데이터 수정 처리
-  const handleTableDataChange = (index: number, field: string, value: string) => {
-    setEditableTableData(prevData => {
-      const newData = [...prevData];
-      newData[index] = {
-        ...newData[index],
-        [field]: value
-      };
-      return newData;
-    });
-  };
-  
-  // 테이블 행 추가
-  const addTableRow = () => {
-    setEditableTableData(prevData => [
-      ...prevData, 
-      {
-        processName: '',
-        riskFactor: '',
-        severity: '',
-        probability: '',
-        riskLevel: '',
-        countermeasure: ''
+  const applyRiskToRow = (tr: HTMLTableRowElement, table: HTMLTableElement) => {
+    const tds = tr.querySelectorAll<HTMLElement>('td');
+    if (tds.length < 6) return;
+    const rows: { severity: string; probability: string }[] = [];
+    table.querySelectorAll('tbody tr').forEach((r) => {
+      const c = r.querySelectorAll('td');
+      if (c.length >= 4) {
+        rows.push({
+          severity: c[2].textContent?.trim() || '',
+          probability: c[3].textContent?.trim() || '',
+        });
       }
-    ]);
-  };
-  
-  // 테이블 행 삭제
-  const removeTableRow = (index: number) => {
-    setEditableTableData(prevData => 
-      prevData.filter((_, i) => i !== index)
+    });
+    const m = inferAssessmentMethod(rows);
+    tds[4].textContent = computeRiskLevelLabel(
+      tds[2].textContent?.trim() || '',
+      tds[3].textContent?.trim() || '',
+      m
     );
   };
+
+  // 최종 표: 중대성/가능성만 편집, 위험도는 자동(실시간)
+  useLayoutEffect(() => {
+    if (!isEditingFinal || !finalAnalysisTableRef.current) return;
+    const root = finalAnalysisTableRef.current;
+    const table =
+      root.querySelector<HTMLTableElement>('table.main-assessment-table') ||
+      Array.from(root.querySelectorAll<HTMLTableElement>('table')).find((t) => {
+        const tr = t.querySelector('tbody tr');
+        return tr != null && tr.querySelectorAll('td').length >= 6;
+      });
+    if (!table) return;
+    const bodyRows = table.querySelectorAll<HTMLTableRowElement>('tbody tr');
+    const applyRow = (tr: HTMLTableRowElement) => {
+      const tds = tr.querySelectorAll<HTMLElement>('td');
+      if (tds.length < 6) return;
+      tds[4].textContent = computeRiskLevelLabel(
+        tds[2].textContent?.trim() || '',
+        tds[3].textContent?.trim() || '',
+        assessmentMethod
+      );
+    };
+    bodyRows.forEach((tr) => {
+      const tds = tr.querySelectorAll<HTMLElement>('td');
+      if (tds.length < 6) return;
+      tds.forEach((el, col) => {
+        if (col === 4) {
+          el.contentEditable = 'false';
+          el.removeAttribute('contenteditable');
+          el.style.cursor = 'not-allowed';
+          el.style.outline = '1px solid rgba(148, 163, 184, 0.55)';
+          el.style.outlineOffset = '-1px';
+          el.style.background = 'rgba(248, 250, 252, 0.98)';
+        } else {
+          el.contentEditable = 'true';
+          el.style.cursor = 'text';
+          el.style.outline = '1px dashed rgba(59, 130, 246, 0.45)';
+          el.style.outlineOffset = '-1px';
+        }
+      });
+      applyRow(tr);
+    });
+    const onInput = (e: Event) => {
+      const t = e.target as HTMLElement;
+      if (!t.closest('tbody')) return;
+      const tr = t.closest('tr') as HTMLTableRowElement | null;
+      if (!tr || !tr.closest('table')?.isSameNode(table)) return;
+      const targetTd = t.closest('td');
+      if (!targetTd) return;
+      const tds = tr.querySelectorAll('td');
+      const col = Array.prototype.indexOf.call(tds, targetTd);
+      if (col !== 2 && col !== 3) return;
+      tds[4].textContent = computeRiskLevelLabel(
+        tds[2].textContent?.trim() || '',
+        tds[3].textContent?.trim() || '',
+        assessmentMethod
+      );
+    };
+    root.addEventListener('input', onInput, true);
+    return () => {
+      root.removeEventListener('input', onInput, true);
+      bodyRows.forEach((tr) => {
+        tr.querySelectorAll<HTMLElement>('td').forEach((el) => {
+          el.contentEditable = 'false';
+          el.removeAttribute('contenteditable');
+          el.style.removeProperty('cursor');
+          el.style.removeProperty('outline');
+          el.style.removeProperty('outline-offset');
+          el.style.removeProperty('background');
+        });
+      });
+    };
+  }, [isEditingFinal, finalAnalysis, assessmentMethod]);
+
+  // 저장 항목 상세: 본문 표(중대성/가능성만 편집, 위험도는 테이블 기준 infer + 자동)
+  useLayoutEffect(() => {
+    if (!isEditingSaved || !savedAssessmentTableRef.current) return;
+    const root = savedAssessmentTableRef.current;
+    const table =
+      root.querySelector<HTMLTableElement>('table.main-assessment-table') ||
+      Array.from(root.querySelectorAll<HTMLTableElement>('table')).find((t) => {
+        const tr = t.querySelector('tbody tr');
+        return tr != null && tr.querySelectorAll('td').length >= 6;
+      });
+    if (!table) return;
+    const bodyRows = table.querySelectorAll<HTMLTableRowElement>('tbody tr');
+    bodyRows.forEach((tr) => {
+      const tds = tr.querySelectorAll<HTMLElement>('td');
+      if (tds.length < 6) return;
+      tds.forEach((el, col) => {
+        if (col === 4) {
+          el.contentEditable = 'false';
+          el.removeAttribute('contenteditable');
+          el.style.cursor = 'not-allowed';
+          el.style.outline = '1px solid rgba(148, 163, 184, 0.55)';
+          el.style.outlineOffset = '-1px';
+          el.style.background = 'rgba(248, 250, 252, 0.98)';
+        } else {
+          el.contentEditable = 'true';
+          el.style.cursor = 'text';
+          el.style.outline = '1px dashed rgba(59, 130, 246, 0.45)';
+          el.style.outlineOffset = '-1px';
+        }
+      });
+      applyRiskToRow(tr, table);
+    });
+    const onInput = (e: Event) => {
+      const t = e.target as HTMLElement;
+      if (!t.closest('tbody')) return;
+      const tr = t.closest('tr') as HTMLTableRowElement | null;
+      if (!tr || !tr.closest('table')?.isSameNode(table)) return;
+      const targetTd = t.closest('td');
+      if (!targetTd) return;
+      const tds = tr.querySelectorAll('td');
+      const col = Array.prototype.indexOf.call(tds, targetTd);
+      if (col !== 2 && col !== 3) return;
+      applyRiskToRow(tr, table);
+    };
+    root.addEventListener('input', onInput, true);
+    return () => {
+      root.removeEventListener('input', onInput, true);
+      bodyRows.forEach((tr) => {
+        tr.querySelectorAll<HTMLElement>('td').forEach((el) => {
+          el.contentEditable = 'false';
+          el.removeAttribute('contenteditable');
+          el.style.removeProperty('cursor');
+          el.style.removeProperty('outline');
+          el.style.removeProperty('outline-offset');
+          el.style.removeProperty('background');
+        });
+      });
+    };
+  }, [isEditingSaved, selectedAssessment?.id, selectedAssessment?.tableHTML]);
   
-  // 수정된 테이블 변경사항 적용
-  const applyTableChanges = () => {
-    // 수정된 데이터로 HTML 테이블 생성
-    const tableHTML = generateTableHTML(editableTableData, approvalCount, showWorkerSignatures);
-    setFinalAnalysis(tableHTML);
+  // 수정된 테이블 변경사항 적용 (위험도는 중대성·가능성으로만 산정)
+  const applyTableChanges = (dataOverride?: typeof editableTableData) => {
+    const raw = dataOverride ?? editableTableData;
+    const data = enrichTableRowsWithRisk(raw, assessmentMethod);
+    setEditableTableData(data);
+    setFinalAnalysis(generateTableHTML(data, approvalCount, showWorkerSignatures));
   };
 
   // 위험성평가 추가 요청 함수 수정
@@ -1134,39 +1327,47 @@ function ClientSideContent() {
     setCurrentView(newView);
   };
 
-  // 저장된 위험성평가 편집 모드 토글
+  // 저장된 위험성평가 편집 모드 토글 (최종 HTML 그대로 편집, 완료 시 상세 state 반영; finalAnalysis 는 건드리지 않음)
   const toggleSavedEditMode = () => {
     if (!isEditingSaved) {
-      // 수정 모드로 전환할 때 HTML에서 테이블 데이터 추출
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = selectedAssessment?.tableHTML || '';
-      
-      const table = tempDiv.querySelector('table');
+      const table =
+        tempDiv.querySelector('.main-assessment-table') ||
+        Array.from(tempDiv.querySelectorAll('table')).find((t) => {
+          const tr = t.querySelector('tbody tr');
+          return tr != null && tr.querySelectorAll('td').length >= 6;
+        });
       if (!table) return;
-      
       const tbody = table.querySelector('tbody');
       if (!tbody) return;
-      
       const rows = tbody.querySelectorAll('tr');
-      const extractedData = Array.from(rows).map(row => {
+      const extractedData = Array.from(rows).map((row) => {
         const cells = row.querySelectorAll('td');
-        
         return {
           processName: cells[0]?.textContent?.trim() || '',
           riskFactor: cells[1]?.textContent?.trim() || '',
           severity: cells[2]?.textContent?.trim() || '',
           probability: cells[3]?.textContent?.trim() || '',
-          riskLevel: cells[4]?.textContent?.trim() || '',
-          countermeasure: cells[5]?.textContent?.trim() || ''
+          countermeasure: cells[5]?.textContent?.trim() || '',
         };
       });
-      
-      setEditableTableData(extractedData);
+      const method = inferAssessmentMethod(extractedData);
+      setEditableTableData(enrichTableRowsWithRisk(extractedData, method));
     } else {
-      // 수정 모드에서 나갈 때 변경사항 적용
-      applyTableChanges();
+      const fromDom = extractTableDataFromContainer(
+        savedAssessmentTableRef.current,
+        'infer'
+      );
+      if (fromDom && fromDom.length > 0) {
+        const method = inferAssessmentMethod(fromDom);
+        const newHtml = generateTableHTML(fromDom, approvalCount, showWorkerSignatures, method);
+        setEditableTableData(fromDom);
+        setSelectedAssessment((prev) =>
+          prev ? { ...prev, tableData: fromDom, tableHTML: newHtml } : null
+        );
+      }
     }
-    
     setIsEditingSaved(!isEditingSaved);
   };
 
@@ -1908,123 +2109,24 @@ function ClientSideContent() {
                         </div>
                       )}
 
-                      {isEditingFinal ? (
-                        <div className="overflow-x-auto">
-                          <table className="w-full border-collapse min-w-[800px]">
-                            <thead>
-                              <tr className="bg-gray-50">
-                                <th className="px-5 py-4 text-left text-sm font-semibold text-gray-700 border border-gray-200 bg-gray-50">공정/장비</th>
-                                <th className="px-5 py-4 text-left text-sm font-semibold text-gray-700 border border-gray-200 bg-gray-50">위험 요소</th>
-                                <th className="px-5 py-4 text-left text-sm font-semibold text-gray-700 border border-gray-200 bg-gray-50">중대성</th>
-                                <th className="px-5 py-4 text-left text-sm font-semibold text-gray-700 border border-gray-200 bg-gray-50">가능성</th>
-                                <th className="px-5 py-4 text-left text-sm font-semibold text-gray-700 border border-gray-200 bg-gray-50">위험도</th>
-                                <th className="px-5 py-4 text-left text-sm font-semibold text-gray-700 border border-gray-200 bg-gray-50">대책</th>
-                                <th className="px-5 py-4 text-left text-sm font-semibold text-gray-700 border border-gray-200 bg-gray-50 w-20">작업</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {editableTableData.map((row, index) => (
-                                <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                  <td className="px-5 py-4 border border-gray-200">
-                                    <input
-                                      type="text"
-                                      value={row.processName}
-                                      onChange={(e) => handleTableDataChange(index, 'processName', e.target.value)}
-                                      className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                    />
-                                  </td>
-                                  <td className="px-5 py-4 border border-gray-200">
-                                    <input
-                                      type="text"
-                                      value={row.riskFactor}
-                                      onChange={(e) => handleTableDataChange(index, 'riskFactor', e.target.value)}
-                                      className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                    />
-                                  </td>
-                                  <td className="px-5 py-4 border border-gray-200">
-                                    <input
-                                      type="number"
-                                      min="1"
-                                      max="5"
-                                      value={row.severity}
-                                      onChange={(e) => handleTableDataChange(index, 'severity', e.target.value)}
-                                      className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                      placeholder="1-5"
-                                    />
-                                  </td>
-                                  <td className="px-5 py-4 border border-gray-200">
-                                    <input
-                                      type="number"
-                                      min="1"
-                                      max="5"
-                                      value={row.probability}
-                                      onChange={(e) => handleTableDataChange(index, 'probability', e.target.value)}
-                                      className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                      placeholder="1-5"
-                                    />
-                                  </td>
-                                  <td className="px-5 py-4 border border-gray-200">
-                                    <select
-                                      value={row.riskLevel}
-                                      onChange={(e) => handleTableDataChange(index, 'riskLevel', e.target.value)}
-                                      className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                    >
-                                      <option value="">선택</option>
-                                      <option value="높음">높음</option>
-                                      <option value="중간">중간</option>
-                                      <option value="낮음">낮음</option>
-                                    </select>
-                                  </td>
-                                  <td className="px-5 py-4 border border-gray-200">
-                                    <textarea
-                                      value={row.countermeasure}
-                                      onChange={(e) => handleTableDataChange(index, 'countermeasure', e.target.value)}
-                                      className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                      rows={2}
-                                    />
-                                  </td>
-                                  <td className="px-5 py-4 border border-gray-200">
-                                    <button
-                                      onClick={() => removeTableRow(index)}
-                                      className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-50 transition-all duration-200 w-full flex items-center justify-center"
-                                      title="행 삭제"
-                                    >
-                                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                      </svg>
-                                    </button>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                          
-                          <div className="mt-8 flex justify-center">
-                            <button
-                              onClick={addTableRow}
-                              className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg hover:from-emerald-600 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-opacity-50 transition-all duration-300 flex items-center shadow-md"
-                            >
-                              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                              </svg>
-                              행 추가하기
-                            </button>
+                      <div className="relative">
+                        {!isEditingFinal && (
+                          <div className="md:hidden">
+                            {renderRiskAssessmentCards(editableTableData)}
                           </div>
+                        )}
+                        <div
+                          className={`overflow-x-auto scrollbar-hide ${
+                            !isEditingFinal ? 'hidden md:block' : 'block'
+                          }${isEditingFinal ? ' ring-2 ring-blue-400/60 ring-inset rounded-xl' : ''}`}
+                          ref={finalAnalysisTableRef}
+                        >
+                          <div
+                            className="final-analysis-content"
+                            dangerouslySetInnerHTML={{ __html: finalAnalysis || '' }}
+                          />
                         </div>
-                      ) : (
-                        <div className="relative">
-                          {/* 데스크탑 테이블 뷰 */}
-                          <div className="hidden md:block overflow-x-auto scrollbar-hide">
-                            <div 
-                              className="final-analysis-content" 
-                              dangerouslySetInnerHTML={{ __html: finalAnalysis }}
-                            ></div>
-                          </div>
-                          
-                          {/* 모바일 카드 뷰 */}
-                          {renderRiskAssessmentCards(editableTableData)}
-                        </div>
-                      )}
+                      </div>
                     </div>
                     <div className="border-t border-gray-100 bg-gray-50 px-8 py-4">
                       <p className="text-sm text-gray-600">
@@ -2226,123 +2328,24 @@ function ClientSideContent() {
                   </div>
                 )}
 
-                {isEditingSaved ? (
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="bg-gray-50">
-                          <th className="px-5 py-4 text-left text-sm font-semibold text-gray-700 border border-gray-200 bg-gray-50">공정/장비</th>
-                          <th className="px-5 py-4 text-left text-sm font-semibold text-gray-700 border border-gray-200 bg-gray-50">위험 요소</th>
-                          <th className="px-5 py-4 text-left text-sm font-semibold text-gray-700 border border-gray-200 bg-gray-50">중대성</th>
-                          <th className="px-5 py-4 text-left text-sm font-semibold text-gray-700 border border-gray-200 bg-gray-50">가능성</th>
-                          <th className="px-5 py-4 text-left text-sm font-semibold text-gray-700 border border-gray-200 bg-gray-50">위험도</th>
-                          <th className="px-5 py-4 text-left text-sm font-semibold text-gray-700 border border-gray-200 bg-gray-50">대책</th>
-                          <th className="px-5 py-4 text-left text-sm font-semibold text-gray-700 border border-gray-200 bg-gray-50 w-20">작업</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {editableTableData.map((row, index) => (
-                          <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                            <td className="px-5 py-4 border border-gray-200">
-                              <input
-                                type="text"
-                                value={row.processName}
-                                onChange={(e) => handleTableDataChange(index, 'processName', e.target.value)}
-                                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                              />
-                            </td>
-                            <td className="px-5 py-4 border border-gray-200">
-                              <input
-                                type="text"
-                                value={row.riskFactor}
-                                onChange={(e) => handleTableDataChange(index, 'riskFactor', e.target.value)}
-                                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                              />
-                            </td>
-                            <td className="px-5 py-4 border border-gray-200">
-                              <input
-                                type="number"
-                                min="1"
-                                max="5"
-                                value={row.severity}
-                                onChange={(e) => handleTableDataChange(index, 'severity', e.target.value)}
-                                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                placeholder="1-5"
-                              />
-                            </td>
-                            <td className="px-5 py-4 border border-gray-200">
-                              <input
-                                type="number"
-                                min="1"
-                                max="5"
-                                value={row.probability}
-                                onChange={(e) => handleTableDataChange(index, 'probability', e.target.value)}
-                                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                placeholder="1-5"
-                              />
-                            </td>
-                            <td className="px-5 py-4 border border-gray-200">
-                              <select
-                                value={row.riskLevel}
-                                onChange={(e) => handleTableDataChange(index, 'riskLevel', e.target.value)}
-                                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                              >
-                                <option value="">선택</option>
-                                <option value="높음">높음</option>
-                                <option value="중간">중간</option>
-                                <option value="낮음">낮음</option>
-                              </select>
-                            </td>
-                            <td className="px-5 py-4 border border-gray-200">
-                              <textarea
-                                value={row.countermeasure}
-                                onChange={(e) => handleTableDataChange(index, 'countermeasure', e.target.value)}
-                                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                rows={2}
-                              />
-                            </td>
-                            <td className="px-5 py-4 border border-gray-200">
-                              <button
-                                onClick={() => removeTableRow(index)}
-                                className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-50 transition-all duration-200 w-full flex items-center justify-center"
-                                title="행 삭제"
-                              >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                </svg>
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    
-                    <div className="mt-8 flex justify-center">
-                      <button
-                        onClick={addTableRow}
-                        className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg hover:from-emerald-600 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-opacity-50 transition-all duration-300 flex items-center shadow-md"
-                      >
-                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                        </svg>
-                        행 추가하기
-                      </button>
+                <div className="relative">
+                  {!isEditingSaved && (
+                    <div className="md:hidden">
+                      {renderRiskAssessmentCards(editableTableData)}
                     </div>
+                  )}
+                  <div
+                    className={`overflow-x-auto scrollbar-hide ${
+                      !isEditingSaved ? 'hidden md:block' : 'block'
+                    }${isEditingSaved ? ' ring-2 ring-blue-400/60 ring-inset rounded-xl' : ''}`}
+                    ref={savedAssessmentTableRef}
+                  >
+                    <div
+                      className="final-analysis-content"
+                      dangerouslySetInnerHTML={{ __html: selectedAssessment.tableHTML }}
+                    />
                   </div>
-                ) : (
-                  <div className="relative">
-                    {/* 데스크탑 테이블 뷰 */}
-                    <div className="hidden md:block overflow-x-auto scrollbar-hide">
-                      <div 
-                        className="final-analysis-content" 
-                        dangerouslySetInnerHTML={{ __html: selectedAssessment.tableHTML }}
-                      ></div>
-                    </div>
-                    
-                    {/* 모바일 카드 뷰 */}
-                    {renderRiskAssessmentCards(editableTableData)}
-                  </div>
-                )}
+                </div>
               </div>
               
               {isEditingSaved && (

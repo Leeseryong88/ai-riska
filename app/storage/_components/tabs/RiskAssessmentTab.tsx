@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { 
   collection, 
   query, 
@@ -21,6 +21,11 @@ import { useAuth } from '@/app/context/AuthContext';
 import { Trash2, ExternalLink, Calendar, Info, FileSpreadsheet, Printer, Edit2, Check, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Pagination } from '@/components/ui/Pagination';
+import {
+  computeRiskLevelLabel,
+  inferAssessmentMethod,
+  riskLevelBadgeStyle,
+} from '@/app/lib/risk-level';
 
 interface AssessmentRecord {
   id: string;
@@ -47,6 +52,7 @@ export function RiskAssessmentTab() {
   const [editApprovalLabels, setEditApprovalLabels] = useState<string[]>([]);
   const [editShowWorkerSignatures, setEditShowWorkerSignatures] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const assessmentTableRef = useRef<HTMLDivElement>(null);
 
   const FETCH_BATCH = 100;
   const LIST_PAGE_SIZE = 10;
@@ -165,12 +171,6 @@ export function RiskAssessmentTab() {
     setIsEditing(false);
   };
 
-  const handleTableDataChange = (index: number, field: string, value: string) => {
-    const newData = [...editTableData];
-    newData[index] = { ...newData[index], [field]: value };
-    setEditTableData(newData);
-  };
-
   const generateTableHTML = (data: any[], appCount: number = 0, appLabels: string[] = [], workerSigs: boolean = false) => {
     let approvalHTML = '';
     if (appCount > 0) {
@@ -229,10 +229,11 @@ export function RiskAssessmentTab() {
       `;
     }
 
+    const spMethod = inferAssessmentMethod(data);
     return `
       <div style="width: 100%; font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;">
         ${approvalHTML}
-        <table border="1" style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #94A3B8; table-layout: fixed;">
+        <table class="main-assessment-table" border="1" style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #94A3B8; table-layout: fixed;">
           <thead>
             <tr style="background-color: #F8FAFC;">
               <th style="padding: 12px 8px; border: 1px solid #94A3B8; width: 15%; color: #475569;">공정/장비</th>
@@ -244,24 +245,29 @@ export function RiskAssessmentTab() {
             </tr>
           </thead>
           <tbody>
-            ${data.map(row => `
+            ${data
+              .map((row) => {
+                const risk = computeRiskLevelLabel(
+                  String(row.severity ?? ''),
+                  String(row.probability ?? ''),
+                  spMethod
+                );
+                return `
               <tr>
                 <td style="padding: 10px 8px; border: 1px solid #94A3B8; color: #1E293B;">${row.processName || ''}</td>
                 <td style="padding: 10px 8px; border: 1px solid #94A3B8; color: #1E293B;">${row.riskFactor || ''}</td>
                 <td style="padding: 10px 8px; border: 1px solid #94A3B8; color: #1E293B; text-align: center;">${row.severity || ''}</td>
                 <td style="padding: 10px 8px; border: 1px solid #94A3B8; color: #1E293B; text-align: center;">${row.probability || ''}</td>
                 <td style="padding: 10px 8px; border: 1px solid #94A3B8; color: #1E293B; text-align: center;">
-                  <span style="padding: 2px 8px; border-radius: 9999px; font-weight: bold; font-size: 11px; ${
-                    row.riskLevel === '높음' ? 'background-color: #FEE2E2; color: #991B1B;' : 
-                    row.riskLevel === '중간' ? 'background-color: #FEF3C7; color: #92400E;' : 
-                    'background-color: #D1FAE5; color: #065F46;'
-                  }">
-                    ${row.riskLevel || '낮음'}
-                  </span>
+                  <span style="padding: 2px 8px; border-radius: 9999px; font-weight: bold; font-size: 11px; ${riskLevelBadgeStyle(
+                    risk
+                  )}">${risk}</span>
                 </td>
                 <td style="padding: 10px 8px; border: 1px solid #94A3B8; color: #1E293B;">${row.countermeasure || ''}</td>
               </tr>
-            `).join('')}
+            `;
+              })
+              .join('')}
           </tbody>
         </table>
         ${workerSignatureHTML}
@@ -269,12 +275,156 @@ export function RiskAssessmentTab() {
     `;
   };
 
+  const extractTableDataFromContainer = (container: HTMLElement | null) => {
+    if (!container) return null;
+    const mainTable =
+      container.querySelector<HTMLTableElement>('table.main-assessment-table') ||
+      Array.from(container.querySelectorAll<HTMLTableElement>('table')).find((t) => {
+        const tr = t.querySelector('tbody tr');
+        return tr != null && tr.querySelectorAll('td').length >= 6;
+      }) ||
+      null;
+    if (!mainTable) return null;
+    const tbody = mainTable.querySelector('tbody');
+    if (!tbody) return null;
+    const rows = tbody.querySelectorAll('tr');
+    const data: {
+      processName: string;
+      riskFactor: string;
+      severity: string;
+      probability: string;
+      riskLevel: string;
+      countermeasure: string;
+    }[] = [];
+    rows.forEach((row) => {
+      const cells = row.querySelectorAll('td');
+      if (cells.length < 6) return;
+      data.push({
+        processName: cells[0]?.textContent?.trim() || '',
+        riskFactor: cells[1]?.textContent?.trim() || '',
+        severity: cells[2]?.textContent?.trim() || '',
+        probability: cells[3]?.textContent?.trim() || '',
+        riskLevel: '',
+        countermeasure: cells[5]?.textContent?.trim() || '',
+      });
+    });
+    if (data.length === 0) return null;
+    const method = inferAssessmentMethod(data);
+    return data.map((r) => ({
+      ...r,
+      riskLevel: computeRiskLevelLabel(r.severity, r.probability, method),
+    }));
+  };
+
+  const editFormPreviewHtml = useMemo(
+    () =>
+      generateTableHTML(
+        editTableData,
+        editApprovalCount,
+        editApprovalLabels,
+        editShowWorkerSignatures
+      ),
+    [editTableData, editApprovalCount, editApprovalLabels, editShowWorkerSignatures]
+  );
+
+  const applyRiskToRow = (tr: HTMLTableRowElement, table: HTMLTableElement) => {
+    const tds = tr.querySelectorAll<HTMLElement>('td');
+    if (tds.length < 6) return;
+    const rows: { severity: string; probability: string }[] = [];
+    table.querySelectorAll('tbody tr').forEach((r) => {
+      const c = r.querySelectorAll('td');
+      if (c.length >= 4) {
+        rows.push({
+          severity: c[2].textContent?.trim() || '',
+          probability: c[3].textContent?.trim() || '',
+        });
+      }
+    });
+    const m = inferAssessmentMethod(rows);
+    const label = computeRiskLevelLabel(
+      tds[2].textContent?.trim() || '',
+      tds[3].textContent?.trim() || '',
+      m
+    );
+    tds[4].innerHTML = '';
+    tds[4].textContent = label;
+  };
+
+  const flushEditFromDom = () => {
+    const d = extractTableDataFromContainer(assessmentTableRef.current);
+    if (d && d.length > 0) {
+      setEditTableData(d);
+    }
+  };
+
+  useLayoutEffect(() => {
+    if (!isEditing || !assessmentTableRef.current) return;
+    const root = assessmentTableRef.current;
+    const table =
+      root.querySelector<HTMLTableElement>('table.main-assessment-table') ||
+      Array.from(root.querySelectorAll<HTMLTableElement>('table')).find((t) => {
+        const tr = t.querySelector('tbody tr');
+        return tr != null && tr.querySelectorAll('td').length >= 6;
+      });
+    if (!table) return;
+    const bodyRows = table.querySelectorAll<HTMLTableRowElement>('tbody tr');
+    bodyRows.forEach((tr) => {
+      const tds = tr.querySelectorAll<HTMLElement>('td');
+      if (tds.length < 6) return;
+      tds.forEach((el, col) => {
+        if (col === 4) {
+          el.contentEditable = 'false';
+          el.removeAttribute('contenteditable');
+          el.style.cursor = 'not-allowed';
+          el.style.outline = '1px solid rgba(148, 163, 184, 0.55)';
+          el.style.outlineOffset = '-1px';
+          el.style.background = 'rgba(248, 250, 252, 0.98)';
+        } else {
+          el.contentEditable = 'true';
+          el.style.cursor = 'text';
+          el.style.outline = '1px dashed rgba(59, 130, 246, 0.45)';
+          el.style.outlineOffset = '-1px';
+        }
+      });
+      applyRiskToRow(tr, table);
+    });
+    const onInput = (e: Event) => {
+      const t = e.target as HTMLElement;
+      if (!t.closest('tbody')) return;
+      const tr = t.closest('tr') as HTMLTableRowElement | null;
+      if (!tr || !tr.closest('table')?.isSameNode(table)) return;
+      const targetTd = t.closest('td');
+      if (!targetTd) return;
+      const tds = tr.querySelectorAll('td');
+      const col = Array.prototype.indexOf.call(tds, targetTd);
+      if (col !== 2 && col !== 3) return;
+      applyRiskToRow(tr, table);
+    };
+    root.addEventListener('input', onInput, true);
+    return () => {
+      root.removeEventListener('input', onInput, true);
+      bodyRows.forEach((r) => {
+        r.querySelectorAll<HTMLElement>('td').forEach((el) => {
+          el.contentEditable = 'false';
+          el.removeAttribute('contenteditable');
+          el.style.removeProperty('cursor');
+          el.style.removeProperty('outline');
+          el.style.removeProperty('outline-offset');
+          el.style.removeProperty('background');
+        });
+      });
+    };
+  }, [isEditing, editFormPreviewHtml]);
+
   const handleSave = async () => {
     if (!selectedItem) return;
     setIsSaving(true);
     try {
+      const fromDom = extractTableDataFromContainer(assessmentTableRef.current);
+      const tableData = fromDom && fromDom.length > 0 ? fromDom : editTableData;
+      setEditTableData(tableData);
       const newTableHTML = generateTableHTML(
-        editTableData, 
+        tableData, 
         editApprovalCount, 
         editApprovalLabels,
         editShowWorkerSignatures
@@ -283,7 +433,7 @@ export function RiskAssessmentTab() {
       const docRef = doc(db, 'assessments', selectedItem.id);
       await updateDoc(docRef, {
         title: editTitle,
-        tableData: editTableData,
+        tableData: tableData,
         tableHTML: newTableHTML,
         approvalCount: editApprovalCount,
         approvalLabels: editApprovalLabels,
@@ -296,7 +446,7 @@ export function RiskAssessmentTab() {
           ? { 
               ...item, 
               title: editTitle, 
-              tableData: editTableData, 
+              tableData: tableData, 
               tableHTML: newTableHTML,
               approvalCount: editApprovalCount,
               approvalLabels: editApprovalLabels,
@@ -307,7 +457,7 @@ export function RiskAssessmentTab() {
       setSelectedItem(prev => prev ? { 
         ...prev, 
         title: editTitle, 
-        tableData: editTableData, 
+        tableData: tableData, 
         tableHTML: newTableHTML,
         approvalCount: editApprovalCount,
         approvalLabels: editApprovalLabels,
@@ -555,8 +705,8 @@ export function RiskAssessmentTab() {
                             <button
                               key={count}
                               onClick={() => {
+                                flushEditFromDom();
                                 setEditApprovalCount(count);
-                                // 칸 수가 늘어날 경우 빈 문자열로 채움
                                 if (count > editApprovalLabels.length) {
                                   const newLabels = [...editApprovalLabels];
                                   for (let i = editApprovalLabels.length; i < count; i++) {
@@ -587,6 +737,7 @@ export function RiskAssessmentTab() {
                                 type="text"
                                 value={editApprovalLabels[i] || ''}
                                 onChange={(e) => {
+                                  flushEditFromDom();
                                   const newLabels = [...editApprovalLabels];
                                   newLabels[i] = e.target.value;
                                   setEditApprovalLabels(newLabels);
@@ -604,7 +755,10 @@ export function RiskAssessmentTab() {
                       <div className="flex items-center gap-3">
                         <span className="text-sm font-bold text-gray-700">근로자 명단/서명:</span>
                         <button
-                          onClick={() => setEditShowWorkerSignatures(!editShowWorkerSignatures)}
+                          onClick={() => {
+                            flushEditFromDom();
+                            setEditShowWorkerSignatures(!editShowWorkerSignatures);
+                          }}
                           className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
                             editShowWorkerSignatures 
                               ? 'bg-emerald-600 text-white shadow-sm' 
@@ -616,137 +770,18 @@ export function RiskAssessmentTab() {
                       </div>
                     </div>
 
-                    {/* 실시간 미리보기: 결재칸 */}
-                    {editApprovalCount > 0 && (
-                      <div className="flex justify-end mb-4">
-                        <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
-                          <table className="border-collapse text-center">
-                            <tbody>
-                              <tr>
-                                <th rowSpan={2} className="bg-gray-50 text-[10px] w-8 border border-gray-200 p-1 leading-tight text-gray-500 text-center">
-                                  결<br/>재
-                                </th>
-                                {Array(editApprovalCount).fill(0).map((_, i) => (
-                                  <th key={i} className="bg-gray-50 text-[10px] w-16 h-6 border border-gray-200 p-1 text-gray-500 font-bold text-center">
-                                    {editApprovalLabels[i] || ''}
-                                  </th>
-                                ))}
-                              </tr>
-                              <tr>
-                                {Array(editApprovalCount).fill(0).map((_, i) => (
-                                  <td key={i} className="w-16 h-16 border border-gray-200"></td>
-                                ))}
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="overflow-x-auto">
-                      <table className="w-full border-collapse border border-gray-200 min-w-[800px]">
-                        <thead>
-                          <tr className="bg-gray-50 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                            <th className="px-4 py-3 border border-gray-200 text-left">공정/장비</th>
-                            <th className="px-4 py-3 border border-gray-200 text-left">위험 요소</th>
-                            <th className="px-4 py-3 border border-gray-200 w-20 text-center">중대성</th>
-                            <th className="px-4 py-3 border border-gray-200 w-20 text-center">가능성</th>
-                            <th className="px-4 py-3 border border-gray-200 w-28 text-center">위험도</th>
-                            <th className="px-4 py-3 border border-gray-200 text-left">대책</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200 bg-white">
-                          {editTableData.map((row, idx) => (
-                            <tr key={idx}>
-                              <td className="p-2 border border-gray-200">
-                                <input 
-                                  type="text" 
-                                  value={row.processName} 
-                                  onChange={(e) => handleTableDataChange(idx, 'processName', e.target.value)} 
-                                  className="w-full p-2 text-sm border-none focus:ring-2 focus:ring-blue-500 rounded outline-none" 
-                                />
-                              </td>
-                              <td className="p-2 border border-gray-200">
-                                <textarea 
-                                  value={row.riskFactor} 
-                                  onChange={(e) => handleTableDataChange(idx, 'riskFactor', e.target.value)} 
-                                  className="w-full p-2 text-sm border-none focus:ring-2 focus:ring-blue-500 rounded resize-none outline-none" 
-                                  rows={2} 
-                                />
-                              </td>
-                              <td className="p-2 border border-gray-200">
-                                <input 
-                                  type="text" 
-                                  value={row.severity} 
-                                  onChange={(e) => handleTableDataChange(idx, 'severity', e.target.value)} 
-                                  className="w-full p-2 text-sm border-none focus:ring-2 focus:ring-blue-500 rounded text-center outline-none" 
-                                />
-                              </td>
-                              <td className="p-2 border border-gray-200">
-                                <input 
-                                  type="text" 
-                                  value={row.probability} 
-                                  onChange={(e) => handleTableDataChange(idx, 'probability', e.target.value)} 
-                                  className="w-full p-2 text-sm border-none focus:ring-2 focus:ring-blue-500 rounded text-center outline-none" 
-                                />
-                              </td>
-                              <td className="p-2 border border-gray-200">
-                                <select 
-                                  value={row.riskLevel} 
-                                  onChange={(e) => handleTableDataChange(idx, 'riskLevel', e.target.value)} 
-                                  className="w-full p-2 text-sm border-none focus:ring-2 focus:ring-blue-500 rounded outline-none cursor-pointer"
-                                >
-                                  <option value="높음">높음</option>
-                                  <option value="중간">중간</option>
-                                  <option value="낮음">낮음</option>
-                                </select>
-                              </td>
-                              <td className="p-2 border border-gray-200">
-                                <textarea 
-                                  value={row.countermeasure} 
-                                  onChange={(e) => handleTableDataChange(idx, 'countermeasure', e.target.value)} 
-                                  className="w-full p-2 text-sm border-none focus:ring-2 focus:ring-blue-500 rounded resize-none outline-none" 
-                                  rows={2} 
-                                />
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                    <p className="text-xs text-gray-500">
+                      아래 표는 저장된 위험성평가와 동일한 양식입니다. 셀을 클릭해 직접 수정하세요. 결재칸·근로자 서명 표시를 바꾸면 표가 다시 그려집니다.
+                    </p>
+                    <div
+                      ref={assessmentTableRef}
+                      className="mt-3 bg-white p-2 border border-gray-100 rounded-2xl overflow-auto ring-2 ring-blue-400/50 ring-inset"
+                    >
+                      <div
+                        className="assessment-table-container"
+                        dangerouslySetInnerHTML={{ __html: editFormPreviewHtml }}
+                      />
                     </div>
-
-                    {/* 실시간 미리보기: 근로자 명단 및 서명 */}
-                    {editShowWorkerSignatures && (
-                      <div className="mt-8 border-t pt-8">
-                        <h3 className="text-base font-black text-gray-900 mb-4 border-l-4 border-emerald-500 pl-3">근로자 명단 및 서명 미리보기</h3>
-                        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                          <table className="w-full border-collapse text-center text-xs">
-                            <thead className="bg-gray-50 font-bold text-gray-500">
-                              <tr>
-                                <th className="p-2 border border-gray-200">성명</th>
-                                <th className="p-2 border border-gray-200">서명</th>
-                                <th className="p-2 border border-gray-200">성명</th>
-                                <th className="p-2 border border-gray-200">서명</th>
-                                <th className="p-2 border border-gray-200">성명</th>
-                                <th className="p-2 border border-gray-200">서명</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {[1, 2].map(i => (
-                                <tr key={i}>
-                                  <td className="h-10 border border-gray-200"></td>
-                                  <td className="h-10 border border-gray-200"></td>
-                                  <td className="h-10 border border-gray-200"></td>
-                                  <td className="h-10 border border-gray-200"></td>
-                                  <td className="h-10 border border-gray-200"></td>
-                                  <td className="h-10 border border-gray-200"></td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 ) : (
                   <div 
