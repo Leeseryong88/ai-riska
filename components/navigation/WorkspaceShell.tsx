@@ -213,6 +213,7 @@ export default function WorkspaceShell({
                     filterIds={[
                       'safety-manager-todo',
                       'safety-log',
+                      'org-chart',
                       'meeting-minutes',
                       'contractor-partners',
                       'work-permit',
@@ -226,6 +227,7 @@ export default function WorkspaceShell({
                   filterIds={[
                     'safety-manager-todo',
                     'safety-log',
+                    'org-chart',
                     'meeting-minutes',
                     'contractor-partners',
                     'work-permit',

@@ -17,6 +17,7 @@ export type ServiceIcon =
   | 'checklist'
   | 'storage'
   | 'meeting'
+  | 'orgChart'
   | 'contact';
 
 export interface ServiceDefinition {
@@ -176,6 +177,21 @@ export const services: ServiceDefinition[] = [
     featured: true,
     accent: { from: 'from-blue-600', to: 'to-cyan-600' },
     highlights: ['일일 기록', '점검 이력', '수정 가능'],
+  },
+  {
+    id: 'org-chart',
+    title: '조직도',
+    shortTitle: '조직도',
+    description: '조직도 작성·정리 기능을 제공할 예정입니다.',
+    href: '/org-chart',
+    category: 'document',
+    status: 'stable',
+    icon: 'orgChart',
+    mobilePriority: 'low',
+    desktopMode: 'workspace',
+    featured: true,
+    accent: { from: 'from-cyan-500', to: 'to-sky-600' },
+    highlights: ['조직 정리', '도식화', '예정'],
   },
   {
     id: 'meeting-minutes',

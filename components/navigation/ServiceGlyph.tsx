@@ -135,6 +135,17 @@ export default function ServiceGlyph({ icon, className = 'h-5 w-5' }: ServiceGly
         </svg>
       );
 
+    case 'orgChart':
+      /* 조직도: 상·하위 박스 연결 */
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+          <rect {...stroke} x="3" y="3" width="18" height="5" rx="1" />
+          <path {...stroke} d="M12 8v2M8 10h8" />
+          <rect {...stroke} x="2" y="12" width="8" height="5" rx="1" />
+          <rect {...stroke} x="14" y="12" width="8" height="5" rx="1" />
+        </svg>
+      );
+
     case 'storage':
       /* 저장소: 아카이브 박스 */
       return (
