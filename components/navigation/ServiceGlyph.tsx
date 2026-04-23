@@ -147,15 +147,16 @@ export default function ServiceGlyph({ icon, className = 'h-5 w-5' }: ServiceGly
       );
 
     case 'hazardousMachinery':
-      /* 유해위험기계기구: 톱니 + 경고 */
+      /* 유해위험기계기구: 타워 크레인 */
       return (
         <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-          <path
-            {...stroke}
-            d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
-          />
-          <circle {...stroke} cx="12" cy="12" r="3" />
-          <path {...stroke} d="M12 9V6M12 18v-3" />
+          <path {...stroke} d="M3 20h10" />
+          <path {...stroke} d="M8 20V8" />
+          <path {...stroke} d="M8 8L19.5 3.5" />
+          <path {...stroke} d="M8 8L3.5 12" />
+          <path {...stroke} d="M16 4.9V16" />
+          <path {...stroke} d="M15 16.5h2" />
+          <path {...stroke} d="M16 16.5V19" />
         </svg>
       );
 
