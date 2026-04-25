@@ -108,7 +108,7 @@ export const services: ServiceDefinition[] = [
     id: 'work-plan',
     title: '작업계획서',
     shortTitle: '작업계획서',
-    description: '작업계획서 작성·정리 기능을 제공할 예정입니다.',
+    description: '법정 작업계획서 대상 작업을 선택하고 최소 정보와 선택 이미지를 바탕으로 고정 양식 초안을 생성합니다.',
     href: '/work-plan',
     category: 'analysis',
     status: 'stable',
@@ -117,7 +117,7 @@ export const services: ServiceDefinition[] = [
     desktopMode: 'workspace',
     featured: true,
     accent: { from: 'from-amber-500', to: 'to-orange-600' },
-    highlights: ['계획 정리', '문서화', '예정'],
+    highlights: ['13개 법정 양식', '고정 문서 구조', '이미지 첨부'],
   },
   {
     id: 'safety-checklist',
