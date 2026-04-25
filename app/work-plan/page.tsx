@@ -7,6 +7,7 @@ import { apiAuthHeaders } from '@/lib/api-client';
 import { useAuth } from '@/app/context/AuthContext';
 import { db } from '@/app/lib/firebase';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { compressImageFileToDataUrl } from '@/app/work-plan/_lib/compress-image';
 import {
   COMMON_WORK_PLAN_FIELDS,
   WORK_PLAN_TEMPLATES,
@@ -34,14 +35,8 @@ const MAX_ATTACHMENTS = 6;
 
 const today = new Date().toISOString().slice(0, 10);
 
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ''));
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-}
+/** 원본(압축 전) 기준, 카메라 고해상도도 허용. 전송은 압축 후. */
+const MAX_RAW_IMAGE_BYTES = 20 * 1024 * 1024;
 
 function fieldValue(values: Record<string, string>, id: string): string {
   return values[id] || '';
@@ -96,7 +91,7 @@ export default function WorkPlanPage() {
 
     const imageFiles = files
       .filter((file) => file.type.startsWith('image/'))
-      .filter((file) => file.size <= 7 * 1024 * 1024);
+      .filter((file) => file.size <= MAX_RAW_IMAGE_BYTES);
 
     const available = Math.max(0, MAX_ATTACHMENTS - attachments.length);
     if (available === 0) {
@@ -110,13 +105,13 @@ export default function WorkPlanPage() {
         nextFiles.map(async (file) => ({
           id: `${Date.now()}-${file.name}-${Math.random().toString(36).slice(2)}`,
           name: file.name,
-          dataUrl: await readFileAsDataUrl(file),
+          dataUrl: await compressImageFileToDataUrl(file),
           note: '',
         }))
       );
       setAttachments((prev) => [...prev, ...nextAttachments]);
       if (files.length !== nextFiles.length) {
-        setWarning('이미지 파일만 첨부되며, 7MB를 초과한 파일 또는 최대 개수를 넘은 파일은 제외했습니다.');
+        setWarning('이미지 파일만 첨부되며, 20MB를 초과한 파일 또는 최대 개수를 넘은 파일은 제외했습니다.');
       }
     } catch (fileError) {
       console.error('첨부 이미지 읽기 오류:', fileError);
@@ -152,7 +147,19 @@ export default function WorkPlanPage() {
           attachments,
         }),
       });
-      const data = (await response.json()) as { planHtml?: string; error?: string; warning?: string };
+      const raw = await response.text();
+      let data: { planHtml?: string; error?: string; warning?: string } = {};
+      try {
+        if (raw) data = JSON.parse(raw) as typeof data;
+      } catch {
+        const hint =
+          response.status === 413
+            ? '첨부 용량이 서버 제한을 초과했습니다. 이미지 수를 줄이거나, 더 작은 이미지로 시도하세요.'
+            : !response.ok
+              ? `요청이 실패했습니다 (HTTP ${response.status}).`
+              : '서버 응답을 해석할 수 없습니다.';
+        throw new Error(hint);
+      }
       if (!response.ok || !data.planHtml) {
         throw new Error(data.error || '작업계획서 생성에 실패했습니다.');
       }

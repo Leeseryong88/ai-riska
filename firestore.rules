@@ -65,6 +65,20 @@ service cloud.firestore {
       allow read, update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
+    // 조직도: 안전보건팀 명칭 등 (문서 ID = manager 사용자 UID)
+    match /safety_org_settings/{userId} {
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow create, update: if isAuthenticated() && request.auth.uid == userId
+        && request.resource.data.managerId == request.auth.uid;
+      allow delete: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // 조직도: 등록 인원 (쿼리: managerId == 인증 uid)
+    match /safety_org_members/{docId} {
+      allow create: if isAuthenticated() && request.resource.data.managerId == request.auth.uid;
+      allow read, update, delete: if isAuthenticated() && resource.data.managerId == request.auth.uid;
+    }
+
     match /safety_logs/{docId} {
       allow create: if isAuthenticated() && request.resource.data.managerId == request.auth.uid;
       allow read, update, delete: if isAuthenticated() && resource.data.managerId == request.auth.uid;
