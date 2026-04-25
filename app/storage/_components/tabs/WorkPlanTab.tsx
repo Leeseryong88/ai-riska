@@ -21,6 +21,7 @@ import { useAuth } from '@/app/context/AuthContext';
 import { Check, ClipboardList, Edit2, ExternalLink, Info, Printer, Trash2, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Pagination } from '@/components/ui/Pagination';
+import { shrinkHtmlDataUrlsForFirestore } from '@/app/work-plan/_lib/shrink-plan-html';
 
 interface WorkPlanRecord {
   id: string;
@@ -146,7 +147,15 @@ export function WorkPlanTab() {
     setIsSaving(true);
 
     try {
-      const updatedHtml = contentEditRef.current?.innerHTML || editHtml;
+      const rawHtml = contentEditRef.current?.innerHTML || editHtml;
+      let updatedHtml = rawHtml;
+      try {
+        updatedHtml = await shrinkHtmlDataUrlsForFirestore(rawHtml);
+      } catch (shrinkErr) {
+        const msg = shrinkErr instanceof Error ? shrinkErr.message : '문서 크기를 줄이지 못했습니다.';
+        alert(msg);
+        return;
+      }
       const docRef = doc(db, 'workPlans', selectedItem.id);
       await updateDoc(docRef, {
         title: editTitle,
@@ -163,7 +172,11 @@ export function WorkPlanTab() {
       alert('수정되었습니다.');
     } catch (error) {
       console.error('Error updating work plan:', error);
-      alert('수정 중 오류가 발생했습니다.');
+      const msg =
+        error instanceof Error && /longer than \d+ bytes/i.test(error.message)
+          ? '문서(HTML)가 Firestore 용량 한도(약 1MB)를 넘습니다. 본문·이미지를 줄인 뒤 다시 저장하세요.'
+          : '수정 중 오류가 발생했습니다.';
+      alert(msg);
     } finally {
       setIsSaving(false);
     }

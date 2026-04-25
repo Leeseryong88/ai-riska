@@ -61,3 +61,53 @@ export async function compressImageFileToDataUrl(file: File): Promise<string> {
     return readFileAsDataUrl(file);
   }
 }
+
+const DATA_URL_IMAGE =
+  /^data:image\/(png|jpe?g|webp|gif|bmp|pjpeg|x-ms-bmp);base64,([A-Za-z0-9+/=\r\n]+)$/i;
+
+/**
+ * planHtml·API 본문에 이미 넣은 Data URL을 다시 캔버스로 줄여 Firestore(약 1MB) 한도에 맞춥니다.
+ */
+export async function compressDataUrlToDataUrl(
+  dataUrl: string,
+  maxEdgePx: number,
+  quality: number
+): Promise<string> {
+  const cleaned = dataUrl.replace(/\s/g, '');
+  const m = DATA_URL_IMAGE.exec(cleaned);
+  if (!m) {
+    return dataUrl;
+  }
+  try {
+    const res = await fetch(cleaned);
+    const blob = await res.blob();
+    if (!blob.type.startsWith('image/')) {
+      return dataUrl;
+    }
+    const bitmap = await createImageBitmap(blob);
+    const max = Math.max(bitmap.width, bitmap.height);
+    let w = bitmap.width;
+    let h = bitmap.height;
+    if (max > maxEdgePx) {
+      const scale = maxEdgePx / max;
+      w = Math.round(bitmap.width * scale);
+      h = Math.round(bitmap.height * scale);
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      bitmap.close();
+      return dataUrl;
+    }
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    bitmap.close();
+    return canvas.toDataURL('image/jpeg', quality);
+  } catch {
+    return dataUrl;
+  }
+}

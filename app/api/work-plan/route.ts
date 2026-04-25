@@ -54,7 +54,7 @@ interface ImagePart {
   };
 }
 
-const MAX_ATTACHMENTS = 6;
+const MAX_ATTACHMENTS = 2;
 
 function escapeHtml(value: unknown): string {
   return String(value ?? '')
@@ -509,6 +509,13 @@ export async function POST(request: NextRequest) {
     if (missing.length > 0) {
       return NextResponse.json(
         { error: `필수 입력값이 부족합니다: ${missing.map((field) => field.label).join(', ')}` },
+        { status: 400 }
+      );
+    }
+
+    if (Array.isArray(body.attachments) && body.attachments.length > MAX_ATTACHMENTS) {
+      return NextResponse.json(
+        { error: `도면ㆍ사진 첨부는 최대 ${MAX_ATTACHMENTS}장까지입니다.` },
         { status: 400 }
       );
     }

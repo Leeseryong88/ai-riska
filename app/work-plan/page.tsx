@@ -8,6 +8,7 @@ import { useAuth } from '@/app/context/AuthContext';
 import { db } from '@/app/lib/firebase';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { compressImageFileToDataUrl } from '@/app/work-plan/_lib/compress-image';
+import { shrinkHtmlDataUrlsForFirestore } from '@/app/work-plan/_lib/shrink-plan-html';
 import {
   COMMON_WORK_PLAN_FIELDS,
   WORK_PLAN_TEMPLATES,
@@ -31,7 +32,7 @@ import {
   X,
 } from 'lucide-react';
 
-const MAX_ATTACHMENTS = 6;
+const MAX_ATTACHMENTS = 2;
 
 const today = new Date().toISOString().slice(0, 10);
 
@@ -205,10 +206,20 @@ export default function WorkPlanPage() {
 
     setIsSaving(true);
     try {
+      let planBody = currentHtml;
+      try {
+        planBody = await shrinkHtmlDataUrlsForFirestore(currentHtml);
+      } catch (shrinkErr) {
+        const msg =
+          shrinkErr instanceof Error ? shrinkErr.message : '문서 크기를 줄이지 못했습니다.';
+        alert(msg);
+        return;
+      }
+
       await addDoc(collection(db, 'workPlans'), {
         userId: user.uid,
         title: saveTitle || `${fieldValue(values, 'projectName') || selectedTemplate.shortTitle} 작업계획서 ${new Date().toLocaleDateString()}`,
-        planHtml: currentHtml,
+        planHtml: planBody,
         templateId: selectedTemplate.id,
         templateTitle: selectedTemplate.title,
         workplace: fieldValue(values, 'workplace'),
@@ -217,12 +228,16 @@ export default function WorkPlanPage() {
         attachmentCount: attachments.length,
         createdAt: serverTimestamp(),
       });
-      setPlanHtml(currentHtml);
+      setPlanHtml(planBody);
       setShowSaveModal(false);
       alert('작업계획서가 AI 서비스 결과 저장소에 저장되었습니다.');
     } catch (saveError) {
       console.error('Error saving work plan:', saveError);
-      alert('저장 중 오류가 발생했습니다.');
+      const msg =
+        saveError instanceof Error && /longer than \d+ bytes/i.test(saveError.message)
+          ? '문서(HTML)가 Firestore 용량 한도(약 1MB)를 넘습니다. 본문·이미지를 줄인 뒤 다시 저장하세요.'
+          : '저장 중 오류가 발생했습니다.';
+      alert(msg);
     } finally {
       setIsSaving(false);
     }
@@ -505,11 +520,33 @@ export default function WorkPlanPage() {
                 <div>
                   <h3 className="text-lg font-black text-slate-900">도면ㆍ사진 첨부</h3>
                   <p className="mt-1 text-sm font-medium text-slate-500">{selectedTemplate.imageGuide}</p>
+                  <p className="mt-1 text-xs font-bold text-amber-800">
+                    이미지는 작업계획서 생성 시 <span className="font-black">최대 {MAX_ATTACHMENTS}장</span>까지만 첨부할 수
+                    있습니다.
+                  </p>
                 </div>
-                <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-black text-white transition hover:bg-slate-700">
+                <label
+                  className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black text-white transition ${
+                    attachments.length >= MAX_ATTACHMENTS
+                      ? 'cursor-not-allowed bg-slate-300'
+                      : 'cursor-pointer bg-slate-900 hover:bg-slate-700'
+                  }`}
+                  title={
+                    attachments.length >= MAX_ATTACHMENTS
+                      ? `이미지는 최대 ${MAX_ATTACHMENTS}장까지 첨부할 수 있습니다.`
+                      : undefined
+                  }
+                >
                   <ImagePlus className="h-4 w-4" />
                   이미지 추가
-                  <input type="file" accept="image/*" multiple className="hidden" onChange={handleFiles} />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    disabled={attachments.length >= MAX_ATTACHMENTS}
+                    onChange={handleFiles}
+                  />
                 </label>
               </div>
 
