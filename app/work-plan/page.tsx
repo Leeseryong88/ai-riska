@@ -4,6 +4,9 @@ import React, { useMemo, useRef, useState } from 'react';
 import WorkspaceShell from '@/components/navigation/WorkspaceShell';
 import AIDisclaimer from '@/components/common/AIDisclaimer';
 import { apiAuthHeaders } from '@/lib/api-client';
+import { useAuth } from '@/app/context/AuthContext';
+import { db } from '@/app/lib/firebase';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import {
   COMMON_WORK_PLAN_FIELDS,
   WORK_PLAN_TEMPLATES,
@@ -21,6 +24,7 @@ import {
   Loader2,
   Printer,
   RefreshCw,
+  Save,
   Sparkles,
   Trash2,
   X,
@@ -48,11 +52,15 @@ function allTemplateFields(template: WorkPlanTemplate): WorkPlanField[] {
 }
 
 export default function WorkPlanPage() {
+  const { user } = useAuth();
   const [agreed, setAgreed] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<WorkPlanTypeId>('construction-machinery');
   const [values, setValues] = useState<Record<string, string>>({ workDate: today });
   const [attachments, setAttachments] = useState<WorkPlanAttachment[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [saveTitle, setSaveTitle] = useState('');
   const [planHtml, setPlanHtml] = useState('');
   const [error, setError] = useState('');
   const [warning, setWarning] = useState('');
@@ -149,6 +157,7 @@ export default function WorkPlanPage() {
         throw new Error(data.error || '작업계획서 생성에 실패했습니다.');
       }
       setPlanHtml(data.planHtml);
+      setSaveTitle(`${fieldValue(values, 'projectName') || selectedTemplate.shortTitle} 작업계획서 ${new Date().toLocaleDateString()}`);
       setWarning(data.warning || '');
       setIsEditing(false);
     } catch (generateError) {
@@ -177,6 +186,39 @@ export default function WorkPlanPage() {
 <style>@page{size:A4;margin:12mm;}body{margin:0;padding:0;background:#fff;}</style>
 </head><body>${content}<script>window.onload=function(){window.print();window.onafterprint=function(){window.close();};};</script></body></html>`);
     printWindow.document.close();
+  };
+
+  const handleSaveWorkPlan = async () => {
+    if (!user) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+    const currentHtml = reportRef.current?.innerHTML || planHtml;
+    if (!currentHtml) return;
+
+    setIsSaving(true);
+    try {
+      await addDoc(collection(db, 'workPlans'), {
+        userId: user.uid,
+        title: saveTitle || `${fieldValue(values, 'projectName') || selectedTemplate.shortTitle} 작업계획서 ${new Date().toLocaleDateString()}`,
+        planHtml: currentHtml,
+        templateId: selectedTemplate.id,
+        templateTitle: selectedTemplate.title,
+        workplace: fieldValue(values, 'workplace'),
+        workDate: fieldValue(values, 'workDate'),
+        fields: values,
+        attachmentCount: attachments.length,
+        createdAt: serverTimestamp(),
+      });
+      setPlanHtml(currentHtml);
+      setShowSaveModal(false);
+      alert('작업계획서가 AI 서비스 결과 저장소에 저장되었습니다.');
+    } catch (saveError) {
+      console.error('Error saving work plan:', saveError);
+      alert('저장 중 오류가 발생했습니다.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const renderField = (field: WorkPlanField) => {
@@ -256,6 +298,16 @@ export default function WorkPlanPage() {
                 {isEditing ? '수정 완료' : '직접 수정'}
               </button>
               <button
+                onClick={() => {
+                  setSaveTitle(`${fieldValue(values, 'projectName') || selectedTemplate.shortTitle} 작업계획서 ${new Date().toLocaleDateString()}`);
+                  setShowSaveModal(true);
+                }}
+                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-black text-white shadow-md shadow-blue-100 transition hover:bg-blue-700"
+              >
+                <Save className="h-4 w-4" />
+                저장소 저장
+              </button>
+              <button
                 onClick={handlePrint}
                 className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-black text-white shadow-md shadow-amber-100 transition hover:bg-amber-700"
               >
@@ -280,6 +332,47 @@ export default function WorkPlanPage() {
             }`}
             dangerouslySetInnerHTML={{ __html: planHtml }}
           />
+
+          {showSaveModal && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <div
+                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                onClick={() => setShowSaveModal(false)}
+              />
+              <div className="relative z-[110] w-full max-w-md rounded-[2rem] bg-white p-8 shadow-2xl">
+                <h3 className="mb-6 flex items-center gap-3 text-2xl font-black text-slate-900">
+                  <Save className="h-7 w-7 text-blue-600" />
+                  작업계획서 저장
+                </h3>
+                <div className="mb-8">
+                  <label className="mb-2 ml-1 block text-sm font-bold text-slate-500">저장 제목</label>
+                  <input
+                    type="text"
+                    value={saveTitle}
+                    onChange={(event) => setSaveTitle(event.target.value)}
+                    placeholder="예: 굴착 작업계획서 2026. 4. 25."
+                    className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 px-5 py-4 font-bold text-slate-900 outline-none transition-all focus:border-blue-500 focus:bg-white"
+                    autoFocus
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowSaveModal(false)}
+                    className="flex-1 rounded-xl bg-slate-100 py-4 text-base font-black text-slate-600 transition hover:bg-slate-200"
+                  >
+                    취소
+                  </button>
+                  <button
+                    onClick={handleSaveWorkPlan}
+                    disabled={isSaving}
+                    className="flex-1 rounded-xl bg-blue-600 py-4 text-base font-black text-white shadow-lg shadow-blue-100 transition hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {isSaving ? '저장 중...' : '저장하기'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </WorkspaceShell>
     );

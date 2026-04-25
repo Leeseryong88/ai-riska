@@ -6,6 +6,7 @@ import { Camera, ShieldAlert, FileText, ClipboardList, Calculator, ListChecks } 
 import { PhotoAnalysisTab } from './_components/tabs/PhotoAnalysisTab';
 import { RiskAssessmentTab } from './_components/tabs/RiskAssessmentTab';
 import { HealthSafetyPlanTab } from './_components/tabs/HealthSafetyPlanTab';
+import { WorkPlanTab } from './_components/tabs/WorkPlanTab';
 import { ManagementFeePlanTab } from './_components/tabs/ManagementFeePlanTab';
 import { SafetyChecklistTab } from '@/app/storage/_components/tabs/SafetyChecklistTab';
 import { cn } from '@/app/work-permit/_lib/utils';
@@ -79,11 +80,7 @@ function StorageContent() {
               {activeTab === 'photo' && <PhotoAnalysisTab />}
               {activeTab === 'assessment' && <RiskAssessmentTab />}
               {activeTab === 'hsp' && <HealthSafetyPlanTab />}
-              {activeTab === 'workplan' && (
-                <div className="flex min-h-[320px] items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/50">
-                  <p className="text-lg font-bold text-slate-500">구현예정</p>
-                </div>
-              )}
+              {activeTab === 'workplan' && <WorkPlanTab />}
               {activeTab === 'mfp' && <ManagementFeePlanTab />}
               {activeTab === 'checklist' && <SafetyChecklistTab />}
             </motion.div>
