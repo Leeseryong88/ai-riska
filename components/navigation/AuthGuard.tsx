@@ -22,13 +22,13 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!loading) {
       if (pathname === '/login') {
-        // 로그인 페이지에서는 유저와 프로필이 모두 있을 때만 대시보드로 이동
-        if (user && userProfile) {
+        // 로그인 페이지에서는 이메일 인증과 프로필이 모두 확인된 경우에만 대시보드로 이동
+        if (user?.emailVerified && userProfile) {
           router.push('/');
         }
       } else if (!isPublicPath(pathname)) {
-        // 그 외 비공개 페이지에서는 유저가 없거나 프로필이 없으면 로그인 페이지로 이동
-        if (!user || !userProfile) {
+        // 그 외 비공개 페이지에서는 인증된 유저와 프로필이 모두 필요함
+        if (!user?.emailVerified || !userProfile) {
           router.push('/login');
         }
       }
@@ -43,8 +43,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // 인증이 필요 없는 페이지거나 로그인이 된 경우 자식 컴포넌트 렌더링
-  if (isPublicPath(pathname) || (user && userProfile)) {
+  // 인증이 필요 없는 페이지거나 이메일 인증까지 완료된 경우 자식 컴포넌트 렌더링
+  if (isPublicPath(pathname) || (user?.emailVerified && userProfile)) {
     return <>{children}</>;
   }
 

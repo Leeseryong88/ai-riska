@@ -11,9 +11,18 @@ export interface UserProfile {
   name: string;
   organization: string;
   phone: string;
+  emailVerified?: boolean;
+  emailVerifiedAt?: string;
   subscriptionActive?: boolean;
   subscriptionPlanAmount?: number;
   subscriptionUpdatedAt?: string;
+  terms?: {
+    privacyAgreed?: boolean;
+    privacyAgreedAt?: string;
+    serviceTermsAgreed?: boolean;
+    serviceTermsAgreedAt?: string;
+    version?: string;
+  };
 }
 
 interface AuthContextType {
@@ -52,7 +61,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setUserProfile(doc.data() as UserProfile);
             setLoading(false);
           } else {
-            // 구글 인증은 되었으나 Firestore에 정보가 없는 경우 (가입 도중 이탈 등)
+            // 인증은 되었으나 Firestore에 정보가 없는 경우 (가입 도중 이탈 등)
             setUserProfile(null);
             
             // 로그인 페이지가 아닌 곳에서 발견되면 강제 로그아웃
