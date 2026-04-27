@@ -109,8 +109,8 @@ export default function LoginPage() {
     try {
       await sendPasswordResetEmail(auth, targetEmail);
       setVerificationPopup({
-        title: '비밀번호 재설정 메일을 보냈습니다',
-        message: `${targetEmail} 주소로 비밀번호 변경 링크를 보냈습니다. 메일함에서 링크를 눌러 새 비밀번호를 설정한 뒤 다시 로그인해주세요. 메일이 보이지 않으면 스팸함도 확인해주세요.`,
+        title: '비밀번호 재설정 안내',
+        message: `${targetEmail} 주소가 가입된 계정이라면 비밀번호 변경 링크가 발송됩니다. 메일함에서 링크를 눌러 새 비밀번호를 설정한 뒤 다시 로그인해주세요. 메일이 보이지 않으면 스팸함도 확인해주세요.`,
       });
     } catch (err: any) {
       setError(getAuthErrorMessage(err));
