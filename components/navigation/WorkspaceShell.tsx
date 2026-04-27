@@ -15,7 +15,7 @@ import ServiceGlyph from '@/components/navigation/ServiceGlyph';
 import TopBar from '@/app/components/TopBar';
 import ContactModal from '@/app/components/ContactModal';
 import { useAuth } from '@/app/context/AuthContext';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, getCountFromServer, query, where } from 'firebase/firestore';
 import { db } from '@/app/lib/firebase';
 
 interface WorkspaceShellProps {
@@ -129,36 +129,56 @@ export default function WorkspaceShell({
   const [unsignedPermitCount, setUnsignedPermitCount] = useState(0);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setUnreadFeedbackCount(0);
+      setUnsignedPermitCount(0);
+      return;
+    }
 
-    // Fetch unread feedback count
-    const feedbackQuery = query(
-      collection(db, 'worker_feedback_submissions'),
-      where('managerId', '==', user.uid)
-    );
+    let cancelled = false;
 
-    const unsubscribeFeedback = onSnapshot(feedbackQuery, (snapshot) => {
-      const unreadCount = snapshot.docs.filter(doc => !doc.data().acknowledged).length;
-      setUnreadFeedbackCount(unreadCount);
-    });
+    const loadSidebarCounts = async () => {
+      try {
+        const feedbackBaseQuery = query(
+          collection(db, 'worker_feedback_submissions'),
+          where('managerId', '==', user.uid)
+        );
+        const feedbackAcknowledgedQuery = query(
+          feedbackBaseQuery,
+          where('acknowledged', '==', true)
+        );
 
-    // Fetch unsigned work permit count
-    const permitQuery = query(
-      collection(db, 'logs'),
-      where('ownerId', '==', user.uid)
-    );
+        const permitBaseQuery = query(
+          collection(db, 'logs'),
+          where('ownerId', '==', user.uid)
+        );
+        const permitApprovedQuery = query(
+          permitBaseQuery,
+          where('adminSignature', '!=', '')
+        );
 
-    const unsubscribePermits = onSnapshot(permitQuery, (snapshot) => {
-      // Filter unsigned permits client-side because adminSignature field might be missing
-      const unsignedCount = snapshot.docs.filter(doc => !doc.data().adminSignature).length;
-      setUnsignedPermitCount(unsignedCount);
-    });
+        const [feedbackTotal, feedbackAcknowledged, permitTotal, permitApproved] = await Promise.all([
+          getCountFromServer(feedbackBaseQuery),
+          getCountFromServer(feedbackAcknowledgedQuery),
+          getCountFromServer(permitBaseQuery),
+          getCountFromServer(permitApprovedQuery),
+        ]);
+
+        if (!cancelled) {
+          setUnreadFeedbackCount(Math.max(0, feedbackTotal.data().count - feedbackAcknowledged.data().count));
+          setUnsignedPermitCount(Math.max(0, permitTotal.data().count - permitApproved.data().count));
+        }
+      } catch (error) {
+        console.error('사이드바 카운트 로드 오류:', error);
+      }
+    };
+
+    loadSidebarCounts();
 
     return () => {
-      unsubscribeFeedback();
-      unsubscribePermits();
+      cancelled = true;
     };
-  }, [user]);
+  }, [user?.uid, pathname]);
 
   const sidebarCounts = {
     'worker-feedback': unreadFeedbackCount,

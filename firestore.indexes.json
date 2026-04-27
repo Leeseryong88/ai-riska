@@ -9,6 +9,22 @@
       ]
     },
     {
+      "collectionGroup": "logs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ownerId", "order": "ASCENDING" },
+        { "fieldPath": "adminSignature", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "safety_logs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "managerId", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "photoAnalysis",
       "queryScope": "COLLECTION",
       "fields": [
@@ -49,6 +65,14 @@
       ]
     },
     {
+      "collectionGroup": "hazardous_machinery",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "managerId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "worker_feedback_submissions",
       "queryScope": "COLLECTION",
       "fields": [
@@ -57,11 +81,35 @@
       ]
     },
     {
+      "collectionGroup": "worker_feedback_submissions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "managerId", "order": "ASCENDING" },
+        { "fieldPath": "acknowledged", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "safety_manager_todos",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "managerId", "order": "ASCENDING" },
         { "fieldPath": "sortOrder", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "safety_manager_todos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "managerId", "order": "ASCENDING" },
+        { "fieldPath": "dueDate", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "meeting_minutes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "managerId", "order": "ASCENDING" },
+        { "fieldPath": "year", "order": "ASCENDING" }
       ]
     },
     {

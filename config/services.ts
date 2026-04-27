@@ -213,7 +213,7 @@ export const services: ServiceDefinition[] = [
     id: 'hazardous-machinery',
     title: '유해위험기계기구',
     shortTitle: '유해위험기계기구',
-    description: '유해·위험기계기구 관리 기능을 제공할 예정입니다.',
+    description: '유해·위험기계기구 대장과 인증·검사 서류, 다음 법정 검사 예정일을 함께 관리합니다.',
     href: '/hazardous-machinery',
     category: 'document',
     status: 'stable',
@@ -222,7 +222,7 @@ export const services: ServiceDefinition[] = [
     desktopMode: 'workspace',
     featured: true,
     accent: { from: 'from-amber-600', to: 'to-rose-600' },
-    highlights: ['기계기구', '대장·점검', '예정'],
+    highlights: ['기계기구 대장', '서류 보관', '검사일 알림'],
   },
   {
     id: 'work-permit',

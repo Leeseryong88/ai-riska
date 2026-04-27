@@ -9,6 +9,7 @@ import {
   query, 
   where, 
   getDocs, 
+  getCountFromServer,
   orderBy, 
   limit,
   Timestamp,
@@ -39,13 +40,13 @@ import {
   startOfMonth, 
   endOfMonth, 
   eachDayOfInterval, 
-  isSameDay, 
   addMonths, 
   subMonths,
   isToday,
   startOfWeek,
   endOfWeek,
-  startOfDay
+  startOfDay,
+  endOfDay
 } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { Button } from '@/app/work-permit/_components/ui/Button';
@@ -104,11 +105,24 @@ export default function VisualDashboard() {
     if (!user) return;
     setLoading(true);
     try {
-      // 1. 누적 일지
+      const visibleStart = startOfWeek(startOfMonth(currentMonth));
+      const visibleEnd = endOfDay(endOfWeek(endOfMonth(currentMonth)));
+      const visibleStartKey = format(visibleStart, 'yyyy-MM-dd');
+      const visibleEndKey = format(visibleEnd, 'yyyy-MM-dd');
+
       const logsRef = collection(db, 'safety_logs');
-      const logsQuery = query(logsRef, where('managerId', '==', user.uid));
-      const logsSnapshot = await getDocs(logsQuery);
-      const safetyLogs = logsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const logsBaseQuery = query(logsRef, where('managerId', '==', user.uid));
+      const logsMonthQuery = query(
+        logsBaseQuery,
+        where('date', '>=', visibleStartKey),
+        where('date', '<=', visibleEndKey),
+        limit(200)
+      );
+      const [logsCountSnapshot, logsSnapshot] = await Promise.all([
+        getCountFromServer(logsBaseQuery),
+        getDocs(logsMonthQuery),
+      ]);
+      const safetyLogs = logsSnapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) }));
       const logDatesMap = new Map<string, number>();
       safetyLogs.forEach(item => {
         const date = item.date;
@@ -117,13 +131,25 @@ export default function VisualDashboard() {
         }
       });
 
-      // 2. 작업 허가서
       const permitsRef = collection(db, 'logs');
-      const permitsQuery = query(permitsRef, where('ownerId', '==', user.uid));
-      const permitsSnapshot = await getDocs(permitsQuery);
-      const workPermits = permitsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      const permitTotal = workPermits.length;
-      const permitApproved = workPermits.filter(item => item.adminSignature).length;
+      const permitsBaseQuery = query(permitsRef, where('ownerId', '==', user.uid));
+      const permitsApprovedQuery = query(
+        permitsBaseQuery,
+        where('adminSignature', '!=', '')
+      );
+      const permitsMonthQuery = query(
+        permitsBaseQuery,
+        where('data.work_start', '>=', visibleStartKey),
+        where('data.work_start', '<=', `${visibleEndKey}T23:59:59`),
+        orderBy('data.work_start', 'desc'),
+        limit(200)
+      );
+      const [permitsCountSnapshot, permitsApprovedSnapshot, permitsSnapshot] = await Promise.all([
+        getCountFromServer(permitsBaseQuery),
+        getCountFromServer(permitsApprovedQuery),
+        getDocs(permitsMonthQuery),
+      ]);
+      const workPermits = permitsSnapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) }));
       
       const permitCountsMap = new Map<string, number>();
       workPermits.forEach(item => {
@@ -153,27 +179,33 @@ export default function VisualDashboard() {
         }
       });
 
-      // 3. 협력 업체
       const partnersRef = collection(db, 'contractor_partners');
       const partnersQuery = query(partnersRef, where('managerId', '==', user.uid));
-      const partnersSnapshot = await getDocs(partnersQuery);
+      const partnersCountSnapshot = await getCountFromServer(partnersQuery);
 
-      // 4. 근로자 의견청취
       const feedbackRef = collection(db, 'worker_feedback_submissions');
       const feedbackQuery = query(feedbackRef, where('managerId', '==', user.uid));
-      const feedbackSnapshot = await getDocs(feedbackQuery);
-      const feedbackTotal = feedbackSnapshot.size;
-      const feedbackAcknowledged = feedbackSnapshot.docs.filter(doc => doc.data().acknowledged).length;
+      const feedbackAcknowledgedQuery = query(feedbackQuery, where('acknowledged', '==', true));
+      const [feedbackTotalSnapshot, feedbackAcknowledgedSnapshot] = await Promise.all([
+        getCountFromServer(feedbackQuery),
+        getCountFromServer(feedbackAcknowledgedQuery),
+      ]);
 
-      // 5. 할 일 목록
       const todosRef = collection(db, 'safety_manager_todos');
-      const allTodosQuery = query(todosRef, where('managerId', '==', user.uid));
+      const allTodosQuery = query(
+        todosRef,
+        where('managerId', '==', user.uid),
+        where('dueDate', '>=', Timestamp.fromDate(visibleStart)),
+        where('dueDate', '<=', Timestamp.fromDate(visibleEnd)),
+        orderBy('dueDate', 'asc'),
+        limit(200)
+      );
       const allTodosSnapshot = await getDocs(allTodosQuery);
       
       const todoStatsMap = new Map<string, { done: number; total: number }>();
       const allTodos = allTodosSnapshot.docs.map(doc => {
         const t = doc.data();
-        const item = { id: doc.id, ...t };
+        const item = { id: doc.id, ...(t as any) };
         if (t.dueDate) {
           const date = t.dueDate.toDate ? t.dueDate.toDate() : new Date(t.dueDate);
           const key = format(date, 'yyyy-MM-dd');
@@ -189,11 +221,15 @@ export default function VisualDashboard() {
       const sortedTodos = allTodos
         .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
 
-      // 6. 회의록 (산업안전보건위원회 / 협력업체 협의체회의 만)
       let meetings: MeetingMini[] = [];
       try {
         const meetingsRef = collection(db, 'meeting_minutes');
-        const meetingsQuery = query(meetingsRef, where('managerId', '==', user.uid));
+        const meetingsQuery = query(
+          meetingsRef,
+          where('managerId', '==', user.uid),
+          where('year', '==', meetingYear),
+          limit(100)
+        );
         const meetingsSnapshot = await getDocs(meetingsQuery);
         meetings = meetingsSnapshot.docs
           .map((d) => {
@@ -216,12 +252,12 @@ export default function VisualDashboard() {
       }
 
       setData({
-        totalLogs: logsSnapshot.size,
-        permitApproved,
-        permitTotal,
-        totalPartners: partnersSnapshot.size,
-        feedbackAcknowledged,
-        feedbackTotal,
+        totalLogs: logsCountSnapshot.data().count,
+        permitApproved: permitsApprovedSnapshot.data().count,
+        permitTotal: permitsCountSnapshot.data().count,
+        totalPartners: partnersCountSnapshot.data().count,
+        feedbackAcknowledged: feedbackAcknowledgedSnapshot.data().count,
+        feedbackTotal: feedbackTotalSnapshot.data().count,
         logDates: logDatesMap,
         permitCounts: permitCountsMap,
         todoStats: todoStatsMap,
@@ -239,7 +275,7 @@ export default function VisualDashboard() {
 
   useEffect(() => {
     fetchData();
-  }, [user]);
+  }, [user, currentMonth, meetingYear]);
 
   // --- Calendar Logic ---
   const calendarDays = () => {
@@ -247,8 +283,6 @@ export default function VisualDashboard() {
     const end = endOfWeek(endOfMonth(currentMonth));
     return eachDayOfInterval({ start, end });
   };
-
-  const hasLog = (day: Date) => data.logDates.some(logDate => isSameDay(logDate, day));
 
   // --- Todo Logic ---
   const handleToggleTodo = async (todoId: string, currentDone: boolean) => {

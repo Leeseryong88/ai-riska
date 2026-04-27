@@ -71,6 +71,7 @@ export default function WorkerFeedbackPublicPage() {
       const payload: Record<string, unknown> = {
         managerId,
         body: t,
+        acknowledged: false,
         createdAt: serverTimestamp(),
       };
       const n = authorName.trim();
