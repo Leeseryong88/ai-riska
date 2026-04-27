@@ -226,20 +226,30 @@ export default function LoginPage() {
           }
         }
 
+        const signUpEmail = currentUser?.email || email.trim();
         await signOut(auth);
         setIsSignUp(false);
         resetSignUpState();
-        setNotice('인증 메일을 보냈습니다. 이메일의 인증 링크를 누른 뒤 로그인해주세요.');
+        setVerificationPopup({
+          title: '인증 메일을 보냈습니다',
+          message: `${signUpEmail} 주소로 인증 메일을 보냈습니다. 최초 로그인 전에 메일함에서 인증 링크를 눌러 계정을 활성화해주세요. 메일이 보이지 않으면 스팸함도 확인해주세요.`,
+        });
       } else {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         await userCredential.user.reload();
 
         if (!userCredential.user.emailVerified) {
-          await sendEmailVerification(userCredential.user);
+          try {
+            await sendEmailVerification(userCredential.user);
+          } catch (err: any) {
+            if (err?.code !== 'auth/too-many-requests') {
+              throw err;
+            }
+          }
           await signOut(auth);
           setVerificationPopup({
             title: '이메일 인증이 필요합니다',
-            message: '회원가입한 이메일로 인증 메일을 다시 보냈습니다. 메일함에서 인증 링크를 누른 뒤 다시 로그인해주세요. 메일이 보이지 않으면 스팸함도 확인해주세요.',
+            message: '이미 발송된 인증 메일을 확인해주세요. 메일함에서 인증 링크를 눌러 계정을 활성화한 뒤 다시 로그인할 수 있습니다. 메일이 보이지 않으면 스팸함도 확인해주세요.',
           });
           return;
         }
