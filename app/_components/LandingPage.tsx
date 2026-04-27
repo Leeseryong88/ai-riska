@@ -15,7 +15,6 @@ const serviceGroups = [
     title: '현장 서류·기록',
     tagline: '일지·허가·협력업체 등 현장 서류를 우리 사업장 기준으로 정리합니다.',
     serviceIds: [
-      'safety-manager-todo',
       'safety-log',
       'work-permit',
       'contractor-partners',

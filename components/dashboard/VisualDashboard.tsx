@@ -11,25 +11,18 @@ import {
   getDocs, 
   getCountFromServer,
   orderBy, 
-  limit,
-  Timestamp,
-  doc,
-  updateDoc,
-  serverTimestamp
+  limit
 } from 'firebase/firestore';
 import { 
   Calendar as CalendarIcon, 
   Users, 
   ShieldAlert, 
   FileText, 
-  CheckCircle2, 
   ChevronLeft, 
   ChevronRight,
   ClipboardList,
   UserPlus,
   MessageSquare,
-  Plus,
-  Trash2,
   Check,
   AlertCircle,
   Minus
@@ -71,8 +64,6 @@ interface DashboardData {
   feedbackTotal: number;
   logDates: Map<string, number>;
   permitCounts: Map<string, number>;
-  todoStats: Map<string, { done: number; total: number }>;
-  todos: any[];
   safetyLogs: any[];
   workPermits: any[];
   meetings: MeetingMini[];
@@ -81,7 +72,7 @@ interface DashboardData {
 export default function VisualDashboard() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'todo' | 'permit' | 'log'>('todo');
+  const [activeTab, setActiveTab] = useState<'permit' | 'log'>('permit');
   const [data, setData] = useState<DashboardData>({
     totalLogs: 0,
     permitApproved: 0,
@@ -91,8 +82,6 @@ export default function VisualDashboard() {
     feedbackTotal: 0,
     logDates: new Map(),
     permitCounts: new Map(),
-    todoStats: new Map(),
-    todos: [],
     safetyLogs: [],
     workPermits: [],
     meetings: []
@@ -191,36 +180,6 @@ export default function VisualDashboard() {
         getCountFromServer(feedbackAcknowledgedQuery),
       ]);
 
-      const todosRef = collection(db, 'safety_manager_todos');
-      const allTodosQuery = query(
-        todosRef,
-        where('managerId', '==', user.uid),
-        where('dueDate', '>=', Timestamp.fromDate(visibleStart)),
-        where('dueDate', '<=', Timestamp.fromDate(visibleEnd)),
-        orderBy('dueDate', 'asc'),
-        limit(200)
-      );
-      const allTodosSnapshot = await getDocs(allTodosQuery);
-      
-      const todoStatsMap = new Map<string, { done: number; total: number }>();
-      const allTodos = allTodosSnapshot.docs.map(doc => {
-        const t = doc.data();
-        const item = { id: doc.id, ...(t as any) };
-        if (t.dueDate) {
-          const date = t.dueDate.toDate ? t.dueDate.toDate() : new Date(t.dueDate);
-          const key = format(date, 'yyyy-MM-dd');
-          const stats = todoStatsMap.get(key) || { done: 0, total: 0 };
-          stats.total += 1;
-          if (t.done) stats.done += 1;
-          todoStatsMap.set(key, stats);
-        }
-        return item;
-      });
-
-      // Sort todos for the list
-      const sortedTodos = allTodos
-        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-
       let meetings: MeetingMini[] = [];
       try {
         const meetingsRef = collection(db, 'meeting_minutes');
@@ -260,8 +219,6 @@ export default function VisualDashboard() {
         feedbackTotal: feedbackTotalSnapshot.data().count,
         logDates: logDatesMap,
         permitCounts: permitCountsMap,
-        todoStats: todoStatsMap,
-        todos: sortedTodos,
         safetyLogs,
         workPermits,
         meetings,
@@ -283,30 +240,6 @@ export default function VisualDashboard() {
     const end = endOfWeek(endOfMonth(currentMonth));
     return eachDayOfInterval({ start, end });
   };
-
-  // --- Todo Logic ---
-  const handleToggleTodo = async (todoId: string, currentDone: boolean) => {
-    try {
-      await updateDoc(doc(db, 'safety_manager_todos', todoId), {
-        done: !currentDone,
-        updatedAt: serverTimestamp(),
-      });
-      setData(prev => ({
-        ...prev,
-        todos: prev.todos.map(t => t.id === todoId ? { ...t, done: !currentDone } : t)
-      }));
-    } catch (error) {
-      console.error("Error toggling todo:", error);
-    }
-  };
-
-  const filteredTodos = selectedDayKey 
-    ? data.todos.filter(t => {
-        if (!t.dueDate) return false;
-        const date = t.dueDate.toDate ? t.dueDate.toDate() : new Date(t.dueDate);
-        return format(date, 'yyyy-MM-dd') === selectedDayKey;
-      })
-    : data.todos.slice(0, 20); // Show top 20 if no date selected
 
   const filteredPermits = selectedDayKey
     ? data.workPermits.filter(p => {
@@ -399,7 +332,6 @@ export default function VisualDashboard() {
               const key = format(day, 'yyyy-MM-dd');
               const hasLog = data.logDates.get(key);
               const permitCount = data.permitCounts.get(key) || 0;
-              const todoStat = data.todoStats.get(key);
               const isSelected = selectedDayKey === key;
 
               return (
@@ -424,11 +356,6 @@ export default function VisualDashboard() {
                         허가({permitCount})
                       </span>
                     )}
-                    {todoStat && (
-                      <span className={`px-1 py-0.5 rounded-[4px] leading-none whitespace-nowrap font-mono ${isSelected ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-700'}`}>
-                        {todoStat.done}/{todoStat.total}
-                      </span>
-                    )}
                   </div>
                 </div>
               );
@@ -443,10 +370,6 @@ export default function VisualDashboard() {
             <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
               <div className="h-2 w-2 rounded-sm bg-amber-100" />
               <span>작업 허가서</span>
-            </div>
-            <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
-              <div className="h-2 w-2 rounded-sm bg-emerald-100" />
-              <span>할 일 (완료/전체)</span>
             </div>
           </div>
         </motion.div>
@@ -478,7 +401,6 @@ export default function VisualDashboard() {
             {/* Tab Bar */}
             <div className="flex gap-1 p-1 bg-slate-50 rounded-2xl">
               {[
-                { id: 'todo', label: '할 일', icon: CheckCircle2, count: filteredTodos.length },
                 { id: 'permit', label: '작업허가서', icon: ClipboardList, count: filteredPermits.length },
                 { id: 'log', label: '안전일지', icon: FileText, count: filteredSafetyLogs.length },
               ].map((tab) => (
@@ -505,53 +427,6 @@ export default function VisualDashboard() {
 
           <div className="flex-1 space-y-3 overflow-y-auto max-h-[450px] pr-2 custom-scrollbar">
             <AnimatePresence mode="wait">
-              {activeTab === 'todo' && (
-                <motion.div
-                  key="todo"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="space-y-3"
-                >
-                  {filteredTodos.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full py-10 text-slate-400">
-                      <ClipboardList className="h-10 w-10 mb-2 opacity-20" />
-                      <p className="text-sm font-bold">예정된 할 일이 없습니다.</p>
-                    </div>
-                  ) : (
-                    filteredTodos.map((todo) => (
-                      <div 
-                        key={todo.id}
-                        className={`flex items-center gap-3 p-4 rounded-2xl border transition-all ${
-                          todo.done 
-                            ? 'bg-slate-50 border-slate-100 opacity-60' 
-                            : 'bg-white border-slate-100 hover:border-blue-200 shadow-sm'
-                        }`}
-                      >
-                        <button
-                          onClick={() => handleToggleTodo(todo.id, todo.done)}
-                          className={`h-6 w-6 rounded-lg border-2 flex items-center justify-center transition-all ${
-                            todo.done 
-                              ? 'bg-blue-600 border-blue-600 text-white' 
-                              : 'border-slate-200 hover:border-blue-400'
-                          }`}
-                        >
-                          {todo.done && <Check className="h-4 w-4 stroke-[3]" />}
-                        </button>
-                        <span className={`text-sm font-bold flex-1 ${todo.done ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
-                          {todo.title}
-                        </span>
-                        {todo.dueDate && (
-                          <span className="text-[10px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
-                            {format(todo.dueDate.toDate ? todo.dueDate.toDate() : new Date(todo.dueDate), 'MM/dd')}
-                          </span>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </motion.div>
-              )}
-
               {activeTab === 'permit' && (
                 <motion.div
                   key="permit"

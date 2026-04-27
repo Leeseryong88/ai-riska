@@ -8,7 +8,6 @@ export type ServiceIcon =
   | 'currency'
   | 'community'
   | 'document'
-  | 'todo'
   | 'safetyLog'
   | 'workPermit'
   | 'contractor'
@@ -148,21 +147,6 @@ export const services: ServiceDefinition[] = [
     featured: true,
     accent: { from: 'from-emerald-500', to: 'to-teal-600' },
     highlights: ['예산 계산', '계획 정리', '문서화'],
-  },
-  {
-    id: 'safety-manager-todo',
-    title: 'TO DO LIST',
-    shortTitle: 'TO DO LIST',
-    description: '안전관리 업무를 할 일 중심으로 정리하고 일정과 완료 상태를 한눈에 확인합니다.',
-    href: '/safety-log',
-    category: 'document',
-    status: 'stable',
-    icon: 'todo',
-    mobilePriority: 'medium',
-    desktopMode: 'workspace',
-    featured: true,
-    accent: { from: 'from-indigo-500', to: 'to-blue-600' },
-    highlights: ['업무 정리', '완료 체크', '기한·메모'],
   },
   {
     id: 'safety-log',
@@ -312,7 +296,7 @@ export function getServiceByHref(href: string | null | undefined) {
     return services.find((s) => s.id === 'safety-log');
   }
   if (href.startsWith('/safety-log')) {
-    return services.find((s) => s.id === 'safety-manager-todo');
+    return services.find((s) => s.id === 'safety-log');
   }
   return undefined;
 }
@@ -324,10 +308,7 @@ export function isServiceActive(
   search: string
 ): boolean {
   if (service.id === 'safety-log') {
-    return pathname === '/safety-log/daily' || pathname.startsWith('/safety-log/daily/');
-  }
-  if (service.id === 'safety-manager-todo') {
-    return pathname === '/safety-log';
+    return pathname === '/safety-log' || pathname === '/safety-log/daily' || pathname.startsWith('/safety-log/daily/');
   }
   const base = service.href.split('?')[0];
   if (pathname !== base) return false;

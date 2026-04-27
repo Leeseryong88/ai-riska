@@ -283,7 +283,6 @@ export default function TopBar({ onOpenContact }: TopBarProps) {
                   {services
                     .filter((service) =>
                       [
-                        'safety-manager-todo',
                         'safety-log',
                         'org-chart',
                         'meeting-minutes',
@@ -296,7 +295,6 @@ export default function TopBar({ onOpenContact }: TopBarProps) {
                     .sort(
                       (a, b) =>
                         [
-                          'safety-manager-todo',
                           'safety-log',
                           'org-chart',
                           'meeting-minutes',
@@ -306,7 +304,6 @@ export default function TopBar({ onOpenContact }: TopBarProps) {
                           'worker-feedback',
                         ].indexOf(a.id) -
                         [
-                          'safety-manager-todo',
                           'safety-log',
                           'org-chart',
                           'meeting-minutes',

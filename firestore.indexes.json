@@ -89,22 +89,6 @@
       ]
     },
     {
-      "collectionGroup": "safety_manager_todos",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "managerId", "order": "ASCENDING" },
-        { "fieldPath": "sortOrder", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "safety_manager_todos",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "managerId", "order": "ASCENDING" },
-        { "fieldPath": "dueDate", "order": "ASCENDING" }
-      ]
-    },
-    {
       "collectionGroup": "meeting_minutes",
       "queryScope": "COLLECTION",
       "fields": [

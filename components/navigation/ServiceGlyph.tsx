@@ -51,15 +51,6 @@ export default function ServiceGlyph({ icon, className = 'h-5 w-5' }: ServiceGly
         </svg>
       );
 
-    case 'todo':
-      /* 할 일: 체크리스트 */
-      return (
-        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-          <path {...stroke} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-          <path {...stroke} d="M9 12l2 2 4-4M9 16h.01M13 16h6" />
-        </svg>
-      );
-
     case 'safetyLog':
       /* 일일 안전일지: 달력 + 기록 줄 */
       return (
