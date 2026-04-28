@@ -370,50 +370,6 @@ export default function LoginPage() {
         )}
 
         <form onSubmit={handleAuth} className="space-y-4">
-          {isSignUp && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">이름</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  required
-                  autoComplete="name"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">소속</label>
-                <input
-                  type="text"
-                  value={organization}
-                  onChange={(e) => setOrganization(e.target.value)}
-                  className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  required
-                  autoComplete="organization"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">전화번호</label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={handlePhoneChange}
-                  className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  required
-                  placeholder="010-0000-0000"
-                  maxLength={13}
-                  autoComplete="tel"
-                  inputMode="tel"
-                />
-                {phone && !isValidPhoneNumber(phone) && (
-                  <p className="mt-1 text-xs text-red-500">휴대폰 번호 형식에 맞게 입력해주세요.</p>
-                )}
-              </div>
-            </>
-          )}
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">이메일</label>
             <input
@@ -482,6 +438,50 @@ export default function LoginPage() {
                 <p className="mt-1 text-xs text-red-500">비밀번호가 일치하지 않습니다.</p>
               )}
             </div>
+          )}
+
+          {isSignUp && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">이름</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  required
+                  autoComplete="name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">소속</label>
+                <input
+                  type="text"
+                  value={organization}
+                  onChange={(e) => setOrganization(e.target.value)}
+                  className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  required
+                  autoComplete="organization"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">전화번호</label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={handlePhoneChange}
+                  className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  required
+                  placeholder="010-0000-0000"
+                  maxLength={13}
+                  autoComplete="tel"
+                  inputMode="tel"
+                />
+                {phone && !isValidPhoneNumber(phone) && (
+                  <p className="mt-1 text-xs text-red-500">휴대폰 번호 형식에 맞게 입력해주세요.</p>
+                )}
+              </div>
+            </>
           )}
 
           {isSignUp && (

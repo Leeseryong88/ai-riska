@@ -55,6 +55,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       if (user) {
+        // 첫 스냅샷 전까지는 user만 있고 userProfile은 null → 로그인 페이지에서
+        // requireProfile용으로 오인해 회원가입 UI가 잠깐 보이는 것을 막기 위해 로딩 유지
+        setLoading(true);
         // Firestore에서 프로필 정보 실시간 구독
         unsubscribeProfile = onSnapshot(doc(db, 'users', user.uid), (doc) => {
           if (doc.exists()) {
@@ -63,7 +66,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           } else {
             // 인증은 되었으나 Firestore에 정보가 없는 경우 (가입 도중 이탈 등)
             setUserProfile(null);
-            
+
             // 로그인 페이지가 아닌 곳에서 발견되면 강제 로그아웃
             if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
               signOut(auth);
