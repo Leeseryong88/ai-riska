@@ -27,6 +27,7 @@ export default function LoginPage() {
   const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
+  const [duplicateAccountEmail, setDuplicateAccountEmail] = useState('');
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [activeTermsModal, setActiveTermsModal] = useState<'privacy' | 'service' | null>(null);
@@ -37,6 +38,16 @@ export default function LoginPage() {
   
   const router = useRouter();
   const { user, userProfile, loading: authLoading } = useAuth();
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const passwordRequirements = [
+    { label: '8자 이상', met: password.length >= 8 },
+    { label: '영문 포함', met: /[A-Za-z]/.test(password) },
+    { label: '숫자 포함', met: /\d/.test(password) },
+    { label: '특수문자 포함', met: /[^A-Za-z0-9]/.test(password) },
+  ];
+  const isPasswordReady = passwordRequirements.every((requirement) => requirement.met);
+  const passwordMismatch = isSignUp && confirmPassword.length > 0 && password !== confirmPassword;
 
   useEffect(() => {
     if (!authLoading && user && user.emailVerified && userProfile) {
@@ -63,12 +74,15 @@ export default function LoginPage() {
     setPhone(formatted);
   };
 
+  const isValidPhoneNumber = (value: string) => /^010-\d{4}-\d{4}$/.test(value);
+
   const resetSignUpState = () => {
     setName('');
     setOrganization('');
     setPhone('');
     setPassword('');
     setConfirmPassword('');
+    setDuplicateAccountEmail('');
     setPrivacyAgreed(false);
     setTermsAgreed(false);
   };
@@ -78,6 +92,15 @@ export default function LoginPage() {
     setError('');
     setNotice('');
     resetSignUpState();
+  };
+
+  const switchToLoginWithCurrentEmail = () => {
+    setIsSignUp(false);
+    setError('');
+    setNotice('가입된 이메일로 로그인해주세요. 비밀번호가 기억나지 않으면 비밀번호 찾기를 이용할 수 있습니다.');
+    setPassword('');
+    setConfirmPassword('');
+    setDuplicateAccountEmail('');
   };
 
   const getAuthErrorMessage = (err: any) => {
@@ -92,10 +115,12 @@ export default function LoginPage() {
     return err?.message || '처리 중 오류가 발생했습니다.';
   };
 
+  const isDuplicateEmailError = (err: any) => err?.code === 'auth/email-already-in-use';
+
   const handlePasswordReset = async () => {
     if (resetLoading) return;
 
-    const targetEmail = email.trim();
+    const targetEmail = normalizedEmail;
     setError('');
     setNotice('');
 
@@ -178,9 +203,34 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
     setNotice('');
+    setDuplicateAccountEmail('');
 
     try {
+      if (!normalizedEmail) {
+        throw new Error('이메일을 입력해주세요.');
+      }
+
       if (isSignUp) {
+        const cleanName = name.trim();
+        const cleanOrganization = organization.trim();
+        const cleanPhone = phone.trim();
+
+        if (!cleanName) {
+          throw new Error('이름을 입력해주세요.');
+        }
+
+        if (!cleanOrganization) {
+          throw new Error('소속을 입력해주세요.');
+        }
+
+        if (!isValidPhoneNumber(cleanPhone)) {
+          throw new Error('전화번호는 010-0000-0000 형식으로 입력해주세요.');
+        }
+
+        if (!isPasswordReady) {
+          throw new Error('비밀번호는 8자 이상이며 영문, 숫자, 특수문자를 모두 포함해야 합니다.');
+        }
+
         if (password !== confirmPassword) {
           throw new Error('비밀번호와 비밀번호 확인이 일치하지 않습니다.');
         }
@@ -192,11 +242,14 @@ export default function LoginPage() {
         let currentUser = null;
 
         try {
-          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+          const userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
           currentUser = userCredential.user;
-          await updateProfile(currentUser, { displayName: name });
+          await updateProfile(currentUser, { displayName: cleanName });
           await sendEmailVerification(currentUser);
         } catch (err: any) {
+          if (isDuplicateEmailError(err)) {
+            setDuplicateAccountEmail(normalizedEmail);
+          }
           throw new Error(getAuthErrorMessage(err));
         }
 
@@ -205,9 +258,9 @@ export default function LoginPage() {
             await setDoc(doc(db, 'users', currentUser.uid), {
               uid: currentUser.uid,
               email: currentUser.email,
-              name,
-              organization,
-              phone,
+              name: cleanName,
+              organization: cleanOrganization,
+              phone: cleanPhone,
               emailVerified: false,
               createdAt: new Date().toISOString(),
               subscriptionActive: false,
@@ -226,7 +279,7 @@ export default function LoginPage() {
           }
         }
 
-        const signUpEmail = currentUser?.email || email.trim();
+        const signUpEmail = currentUser?.email || normalizedEmail;
         await signOut(auth);
         setIsSignUp(false);
         resetSignUpState();
@@ -235,7 +288,7 @@ export default function LoginPage() {
           message: `${signUpEmail} 주소로 인증 메일을 보냈습니다. 최초 로그인 전에 메일함에서 인증 링크를 눌러 계정을 활성화해주세요. 메일이 보이지 않으면 스팸함도 확인해주세요.`,
         });
       } else {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const userCredential = await signInWithEmailAndPassword(auth, normalizedEmail, password);
         await userCredential.user.reload();
 
         if (!userCredential.user.emailVerified) {
@@ -290,6 +343,32 @@ export default function LoginPage() {
           </div>
         )}
 
+        {duplicateAccountEmail && (
+          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            <p className="font-semibold">이미 가입된 이메일입니다.</p>
+            <p className="mt-1">
+              {duplicateAccountEmail} 계정으로 로그인하거나 비밀번호를 재설정해주세요.
+            </p>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                onClick={switchToLoginWithCurrentEmail}
+                className="rounded-lg bg-amber-600 px-3 py-2 font-semibold text-white transition hover:bg-amber-700"
+              >
+                로그인으로 이동
+              </button>
+              <button
+                type="button"
+                onClick={handlePasswordReset}
+                disabled={resetLoading}
+                className="rounded-lg border border-amber-300 px-3 py-2 font-semibold text-amber-800 transition hover:bg-amber-100 disabled:opacity-50"
+              >
+                {resetLoading ? '메일 발송 중...' : '비밀번호 찾기'}
+              </button>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleAuth} className="space-y-4">
           {isSignUp && (
             <>
@@ -301,6 +380,7 @@ export default function LoginPage() {
                   onChange={(e) => setName(e.target.value)}
                   className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                   required
+                  autoComplete="name"
                 />
               </div>
               <div>
@@ -311,6 +391,7 @@ export default function LoginPage() {
                   onChange={(e) => setOrganization(e.target.value)}
                   className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                   required
+                  autoComplete="organization"
                 />
               </div>
               <div>
@@ -323,7 +404,12 @@ export default function LoginPage() {
                   required
                   placeholder="010-0000-0000"
                   maxLength={13}
+                  autoComplete="tel"
+                  inputMode="tel"
                 />
+                {phone && !isValidPhoneNumber(phone) && (
+                  <p className="mt-1 text-xs text-red-500">휴대폰 번호 형식에 맞게 입력해주세요.</p>
+                )}
               </div>
             </>
           )}
@@ -333,9 +419,13 @@ export default function LoginPage() {
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setDuplicateAccountEmail('');
+              }}
               className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
               required
+              autoComplete="email"
             />
           </div>
 
@@ -347,8 +437,21 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
               required
-              minLength={6}
+              minLength={isSignUp ? 8 : 6}
+              autoComplete={isSignUp ? 'new-password' : 'current-password'}
             />
+            {isSignUp && (
+              <div className="mt-2 grid grid-cols-2 gap-1 text-xs">
+                {passwordRequirements.map((requirement) => (
+                  <span
+                    key={requirement.label}
+                    className={requirement.met ? 'text-green-600' : 'text-gray-400'}
+                  >
+                    {requirement.met ? '✓' : '•'} {requirement.label}
+                  </span>
+                ))}
+              </div>
+            )}
             {!isSignUp && (
               <div className="mt-2 text-right">
                 <button
@@ -372,8 +475,12 @@ export default function LoginPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                 required
-                minLength={6}
+                minLength={8}
+                autoComplete="new-password"
               />
+              {passwordMismatch && (
+                <p className="mt-1 text-xs text-red-500">비밀번호가 일치하지 않습니다.</p>
+              )}
             </div>
           )}
 
