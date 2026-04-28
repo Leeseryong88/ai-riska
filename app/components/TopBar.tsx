@@ -102,20 +102,6 @@ export default function TopBar({ onOpenContact }: TopBarProps) {
           </div>
 
           <div className="flex items-center gap-3">
-            <Link
-              href="/board"
-              className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-black transition-all active:scale-95 ${
-                pathname === '/board'
-                  ? 'bg-slate-900 text-white shadow-lg shadow-slate-200'
-                  : 'border border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700'
-              }`}
-            >
-              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
-              </svg>
-              <span className="hidden sm:inline">게시판</span>
-            </Link>
-
             {user && (
               <Link
                 href="/subscription"
@@ -141,7 +127,7 @@ export default function TopBar({ onOpenContact }: TopBarProps) {
                 관리자
               </Link>
             )}
-            
+
             {user && (
               <div className="relative">
                 <button

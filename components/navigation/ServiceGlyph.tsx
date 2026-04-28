@@ -37,14 +37,6 @@ export default function ServiceGlyph({ icon, className = 'h-5 w-5' }: ServiceGly
         </svg>
       );
 
-    case 'community':
-      return (
-        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-          <path {...stroke} d="M17 20h5V10a2 2 0 00-2-2h-4M17 20H7m10 0v-6c0-1.105-.895-2-2-2H9c-1.105 0-2 .895-2 2v6m0 0H2V10a2 2 0 012-2h4m0 0V6a2 2 0 012-2h4a2 2 0 012 2v2M9 8h6" />
-        </svg>
-      );
-
-    case 'document':
       return (
         <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
           <path {...stroke} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useAuth } from '@/app/context/AuthContext';
 import { XIcon } from './Icons';
 
 interface ContactModalProps {
@@ -10,6 +11,7 @@ interface ContactModalProps {
 }
 
 export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
+  const { user } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -18,25 +20,45 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const accountEmailLocked = Boolean(user?.email);
+
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setFormData((prev) => ({
+      ...prev,
+      userEmail: user?.email ?? '',
+    }));
+  }, [isOpen, user?.email]);
 
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
+      const userEmail =
+        typeof user?.email === 'string' && user.email.trim() ? user.email.trim() : formData.userEmail.trim();
+
       const response = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          userEmail,
+        }),
       });
 
       if (response.ok) {
         alert('문의가 성공적으로 전송되었습니다.');
         onClose();
-        setFormData({ title: '', content: '', userEmail: '' });
+        setFormData({
+          title: '',
+          content: '',
+          userEmail: typeof user?.email === 'string' ? user.email : '',
+        });
       } else {
         const data = await response.json();
         alert(`전송 실패: ${data.error || '알 수 없는 오류'}`);
@@ -74,13 +96,28 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">이메일 (답변용)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              이메일 (답변용)
+              {accountEmailLocked ? (
+                <span className="ml-1 text-xs font-normal text-gray-500">· 로그인 계정 이메일과 동일합니다</span>
+              ) : null}
+            </label>
             <input
               type="email"
+              autoComplete="email"
               value={formData.userEmail}
-              onChange={(e) => setFormData({ ...formData, userEmail: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-              placeholder="example@email.com"
+              onChange={(e) => {
+                if (accountEmailLocked) return;
+                setFormData({ ...formData, userEmail: e.target.value });
+              }}
+              readOnly={accountEmailLocked}
+              aria-readonly={accountEmailLocked || undefined}
+              className={`w-full px-4 py-2 border rounded-lg outline-none transition-all ${
+                accountEmailLocked
+                  ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-800'
+                  : 'border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+              }`}
+              placeholder={accountEmailLocked ? '' : 'example@email.com'}
             />
           </div>
           

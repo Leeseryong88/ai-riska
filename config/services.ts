@@ -1,4 +1,4 @@
-export type ServiceCategory = 'analysis' | 'document' | 'community';
+export type ServiceCategory = 'analysis' | 'document';
 export type ServiceStatus = 'stable' | 'beta';
 export type DevicePriority = 'high' | 'medium' | 'low';
 export type ServiceIcon =
@@ -6,7 +6,6 @@ export type ServiceIcon =
   | 'camera'
   | 'assessment'
   | 'currency'
-  | 'community'
   | 'document'
   | 'safetyLog'
   | 'workPermit'
@@ -50,10 +49,6 @@ export const serviceCategories: Record<
   document: {
     title: 'Safety Docs',
     description: '실무 문서, 허가서, 일지, 체크리스트를 누구나 빠짐없이 관리하도록 돕습니다.',
-  },
-  community: {
-    title: '소통과 운영',
-    description: '게시판과 문의를 통해 운영 정보와 현장 피드백을 연결합니다.',
   },
 };
 
@@ -253,21 +248,6 @@ export const services: ServiceDefinition[] = [
     featured: true,
     accent: { from: 'from-violet-500', to: 'to-indigo-700' },
     highlights: ['안내 문구', '의견 수집', '접수 링크'],
-  },
-  {
-    id: 'board',
-    title: '커뮤니티 게시판',
-    shortTitle: '게시판',
-    description: '질문과 공지, 사용자 의견을 한곳에서 확인하고 소통할 수 있습니다.',
-    href: '/board',
-    category: 'community',
-    status: 'stable',
-    icon: 'community',
-    mobilePriority: 'medium',
-    desktopMode: 'workspace',
-    featured: false,
-    accent: { from: 'from-slate-500', to: 'to-slate-700' },
-    highlights: ['질문/공지', '피드백', '운영 소통'],
   },
   {
     id: 'storage',

@@ -211,6 +211,18 @@ function getNextSupervisorSortOrder(members: SafetyOrgMember[]) {
   return orderValues.length ? Math.max(...orderValues) + 1000 : Date.now();
 }
 
+function getPartnerOrderValue(partner: ContractorPartner) {
+  const explicit =
+    typeof partner.sortOrder === 'number' && Number.isFinite(partner.sortOrder) ? partner.sortOrder : null;
+  return explicit ?? toMillis(partner.createdAt);
+}
+
+function sortPartnersForOrgChart(a: ContractorPartner, b: ContractorPartner) {
+  const orderDiff = getPartnerOrderValue(a) - getPartnerOrderValue(b);
+  if (orderDiff !== 0) return orderDiff;
+  return a.companyName.localeCompare(b.companyName, 'ko');
+}
+
 function groupByCompany(members: SafetyOrgMember[], partners: ContractorPartner[]): ContractorGroup[] {
   const map = new Map<string, ContractorGroup>();
 
@@ -237,7 +249,21 @@ function groupByCompany(members: SafetyOrgMember[], partners: ContractorPartner[
     });
   });
 
-  return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+  const partnerBacked: ContractorGroup[] = [];
+  partners.forEach((partner) => {
+    const group = map.get(partner.id);
+    if (group) partnerBacked.push(group);
+  });
+
+  const orphans: ContractorGroup[] = [];
+  for (const group of Array.from(map.values())) {
+    if (!group.partner) {
+      orphans.push(group);
+    }
+  }
+  orphans.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+
+  return [...partnerBacked, ...orphans];
 }
 
 function chunkItems<T>(items: T[], size: number) {
@@ -1138,13 +1164,18 @@ function SupervisorBranch({
     return (
       <div className="relative pt-8">
         <div className="absolute left-1/2 top-0 h-8 w-px -translate-x-1/2 bg-slate-300" />
-        <button
-          type="button"
-          onClick={() => onAddMember({ kind: 'supervisor' })}
-          className="w-full rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-center text-xs font-bold text-slate-400 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
-        >
-          관리감독자, 근로자 대표 등을 추가하세요.
-        </button>
+        <div className="mb-4 flex justify-center">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => onAddMember({ kind: 'supervisor' })}
+            className="org-chart-print-hidden relative z-10 gap-1.5 bg-white shadow-sm"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            관리감독자 추가
+          </Button>
+        </div>
       </div>
     );
   }
@@ -1169,6 +1200,154 @@ function SupervisorBranch({
         onOpenList={onOpenList}
         onReorderSupervisors={onReorderSupervisors}
       />
+    </div>
+  );
+}
+
+function ContractorGroupCard({
+  group,
+  onSelect,
+  reorderable,
+  dragging,
+  dropTarget,
+  onDragHandleStart,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onDragEnd,
+}: {
+  group: ContractorGroup;
+  onSelect: () => void;
+  reorderable: boolean;
+  dragging?: boolean;
+  dropTarget?: boolean;
+  onDragHandleStart?: React.DragEventHandler<HTMLDivElement>;
+  onDragOver?: React.DragEventHandler<HTMLDivElement>;
+  onDragLeave?: React.DragEventHandler<HTMLDivElement>;
+  onDrop?: React.DragEventHandler<HTMLDivElement>;
+  onDragEnd?: React.DragEventHandler<HTMLDivElement>;
+}) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onSelect}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onSelect();
+        }
+      }}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+      className={cn(
+        'org-chart-pdf-card relative rounded-lg border border-emerald-100 bg-white p-3 text-left shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50/40',
+        dragging && 'opacity-45 ring-2 ring-emerald-200',
+        dropTarget && 'border-emerald-300 bg-emerald-50/50 ring-2 ring-emerald-200'
+      )}
+    >
+      {reorderable ? (
+        <div
+          role="button"
+          tabIndex={0}
+          draggable
+          title="드래그해서 위치 변경"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onDragStart={onDragHandleStart}
+          onDragEnd={onDragEnd}
+          className="org-chart-print-hidden absolute right-2 top-2 flex h-6 w-6 cursor-grab items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 active:cursor-grabbing"
+        >
+          <GripVertical className="h-4 w-4" />
+        </div>
+      ) : null}
+      <div className={cn('mb-2', reorderable && 'pr-8')}>
+        <p className="truncate text-sm font-black text-slate-900">{group.name}</p>
+        {group.partner ? (
+          <p className="mt-0.5 truncate text-[11px] font-medium text-slate-500">
+            관리책임자 {group.partner.responsiblePerson} · {group.partner.contact}
+          </p>
+        ) : null}
+      </div>
+      <div className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700">
+        등록 인원 {group.members.length}명
+      </div>
+    </div>
+  );
+}
+
+function ContractorPartnerGrid({
+  partnerBackedGroups,
+  orphanGroups,
+  onSelectGroup,
+  onReorderPartners,
+}: {
+  partnerBackedGroups: ContractorGroup[];
+  orphanGroups: ContractorGroup[];
+  onSelectGroup: (key: string) => void;
+  onReorderPartners: (orderedPartners: ContractorPartner[]) => void | Promise<void>;
+}) {
+  const partners = partnerBackedGroups.map((g) => g.partner!);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+
+  const movePartner = (draggedId: string, targetId: string, insertAfter: boolean) => {
+    if (draggedId === targetId) return;
+    const draggedPartner = partners.find((p) => p.id === draggedId);
+    if (!draggedPartner) return;
+    const without = partners.filter((p) => p.id !== draggedId);
+    const targetIndex = without.findIndex((p) => p.id === targetId);
+    if (targetIndex === -1) return;
+    const insertIndex = targetIndex + (insertAfter ? 1 : 0);
+    const next = [...without];
+    next.splice(insertIndex, 0, draggedPartner);
+    onReorderPartners(next);
+  };
+
+  return (
+    <div className="org-chart-pdf-contractor-grid grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      {partnerBackedGroups.map((group) => (
+        <ContractorGroupCard
+          key={group.key}
+          group={group}
+          onSelect={() => onSelectGroup(group.key)}
+          reorderable
+          dragging={draggingId === group.key}
+          dropTarget={dropTargetId === group.key && draggingId !== group.key}
+          onDragHandleStart={(event) => {
+            event.stopPropagation();
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', group.key);
+            setDraggingId(group.key);
+          }}
+          onDragOver={(event) => {
+            if (!draggingId || draggingId === group.key) return;
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            setDropTargetId(group.key);
+          }}
+          onDragLeave={() => {
+            if (dropTargetId === group.key) setDropTargetId(null);
+          }}
+          onDrop={(event) => {
+            event.preventDefault();
+            const draggedId = event.dataTransfer.getData('text/plain') || draggingId;
+            if (!draggedId) return;
+            const rect = event.currentTarget.getBoundingClientRect();
+            movePartner(draggedId, group.key, event.clientX > rect.left + rect.width / 2);
+            setDraggingId(null);
+            setDropTargetId(null);
+          }}
+          onDragEnd={() => {
+            setDraggingId(null);
+            setDropTargetId(null);
+          }}
+        />
+      ))}
+      {orphanGroups.map((group) => (
+        <ContractorGroupCard key={group.key} group={group} onSelect={() => onSelectGroup(group.key)} reorderable={false} />
+      ))}
     </div>
   );
 }
@@ -1248,6 +1427,7 @@ function OrgChartPreview({
   onEditMember,
   onDeleteMember,
   onReorderSupervisors,
+  onReorderPartners,
 }: {
   members: SafetyOrgMember[];
   partners: ContractorPartner[];
@@ -1260,6 +1440,7 @@ function OrgChartPreview({
   onEditMember: (member: SafetyOrgMember) => void;
   onDeleteMember: (member: SafetyOrgMember) => void;
   onReorderSupervisors: (orderedSupervisors: SafetyOrgMember[]) => void | Promise<void>;
+  onReorderPartners: (orderedPartners: ContractorPartner[]) => void | Promise<void>;
 }) {
   const ownMembers = members.filter((member) => member.affiliation === 'own').sort(sortMembers);
   const contractorMembers = members.filter((member) => member.affiliation === 'contractor').sort(sortMembers);
@@ -1270,6 +1451,8 @@ function OrgChartPreview({
   const userCommitteeMembers = committeeMembers.filter((member) => member.committeeSide !== '근로자 위원');
   const workerCommitteeMembers = committeeMembers.filter((member) => member.committeeSide === '근로자 위원');
   const contractorGroups = groupByCompany(contractorMembers, partners);
+  const partnerBackedContractorGroups = contractorGroups.filter((g) => g.partner);
+  const orphanContractorGroups = contractorGroups.filter((g) => !g.partner);
   const [teamModalOpen, setTeamModalOpen] = useState(false);
   const [committeeModalOpen, setCommitteeModalOpen] = useState(false);
   const [supervisorModalOpen, setSupervisorModalOpen] = useState(false);
@@ -1669,28 +1852,12 @@ function OrgChartPreview({
               </span>
             </div>
             {contractorGroups.length ? (
-              <div className="org-chart-pdf-contractor-grid grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {contractorGroups.map((group) => (
-                  <button
-                    key={group.key}
-                    type="button"
-                    onClick={() => setSelectedContractorKey(group.key)}
-                    className="org-chart-pdf-card rounded-lg border border-emerald-100 bg-white p-3 text-left shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50/40"
-                  >
-                    <div className="mb-2">
-                      <p className="truncate text-sm font-black text-slate-900">{group.name}</p>
-                      {group.partner ? (
-                        <p className="mt-0.5 truncate text-[11px] font-medium text-slate-500">
-                          관리책임자 {group.partner.responsiblePerson} · {group.partner.contact}
-                        </p>
-                      ) : null}
-                    </div>
-                    <div className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700">
-                      등록 인원 {group.members.length}명
-                    </div>
-                  </button>
-                ))}
-              </div>
+              <ContractorPartnerGrid
+                partnerBackedGroups={partnerBackedContractorGroups}
+                orphanGroups={orphanContractorGroups}
+                onSelectGroup={setSelectedContractorKey}
+                onReorderPartners={onReorderPartners}
+              />
             ) : (
               <EmptyNode label="협력업체 또는 협력업체 소속 인원을 추가하세요." />
             )}
@@ -2445,7 +2612,7 @@ function OrgChartContent() {
       (snapshot) => {
         const next = snapshot.docs
           .map((item) => ({ id: item.id, ...item.data() }) as ContractorPartner)
-          .sort((a, b) => a.companyName.localeCompare(b.companyName, 'ko'));
+          .sort(sortPartnersForOrgChart);
         setPartners(next);
         loadedPartners = true;
         finishIfReady();
@@ -2670,6 +2837,44 @@ function OrgChartContent() {
     }
   };
 
+  const handlePartnerReorder = async (orderedPartners: ContractorPartner[]) => {
+    if (!user) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+
+    const previousPartners = partners;
+    const updates = orderedPartners.map((partner, index) => ({
+      id: partner.id,
+      sortOrder: (index + 1) * 1000,
+    }));
+    const orderMap = new Map(updates.map((item) => [item.id, item.sortOrder]));
+
+    setPartners((current) =>
+      [...current]
+        .map((partner) => {
+          const sortOrder = orderMap.get(partner.id);
+          return sortOrder === undefined ? partner : { ...partner, sortOrder };
+        })
+        .sort(sortPartnersForOrgChart)
+    );
+
+    try {
+      const batch = writeBatch(db);
+      updates.forEach((item) => {
+        batch.update(doc(db, 'contractor_partners', item.id), {
+          sortOrder: item.sortOrder,
+          updatedAt: serverTimestamp(),
+        });
+      });
+      await batch.commit();
+    } catch (error) {
+      setPartners(previousPartners);
+      console.error('협력업체 순서 저장 오류:', error);
+      alert('협력업체 순서 저장 중 오류가 발생했습니다.');
+    }
+  };
+
   const saveSafetyTeamName = async (value: string) => {
     const cleanName = value.trim() || DEFAULT_SAFETY_TEAM_NAME;
     setTeamNameDraft(cleanName);
@@ -2754,6 +2959,7 @@ function OrgChartContent() {
             onEditMember={openEditModal}
             onDeleteMember={handleDelete}
             onReorderSupervisors={handleSupervisorReorder}
+            onReorderPartners={handlePartnerReorder}
           />
         )}
       </div>

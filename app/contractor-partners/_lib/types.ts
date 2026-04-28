@@ -100,6 +100,8 @@ export interface ContractorPartner {
     }>;
     evaluatedAt?: unknown;
   };
+  /** 조직도 등에서 업체 카드 순서 (미설정 시 createdAt 순) */
+  sortOrder?: number;
   createdAt?: unknown;
   updatedAt?: unknown;
 }
