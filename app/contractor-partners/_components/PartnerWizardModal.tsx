@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { ChevronDown, X } from 'lucide-react';
 import { Button, Input, Label } from '@/app/safety-log/_components/ui/Button';
 import { cn } from '@/app/safety-log/_lib/utils';
+import { MAX_UPLOAD_FILE_BYTES } from '@/app/lib/upload-limits';
 import {
   type ContractorPartner,
   type OptionalDocKey,
@@ -17,6 +18,15 @@ import {
 } from '../_lib/types';
 
 const ACCEPT = '.pdf,.jpg,.jpeg,.png,.doc,.docx,application/pdf,image/*';
+
+function withinUploadLimit(file: File | null): file is File {
+  if (!file) return false;
+  if (file.size > MAX_UPLOAD_FILE_BYTES) {
+    alert('서류는 파일당 최대 20MB까지 업로드할 수 있습니다.');
+    return false;
+  }
+  return true;
+}
 
 type Step = 1 | 2;
 
@@ -102,6 +112,20 @@ export function PartnerWizardModal({
     if (!companyName.trim() || !responsiblePerson.trim() || !contact.trim()) {
       alert('필수 정보(업체명, 관리책임자, 연락처)를 모두 입력해 주세요.');
       return;
+    }
+    const filesToCheck: File[] = [
+      ...REQUIRED_DOC_KEYS.map((k) => reqFiles[k]).filter((f): f is File => f != null),
+    ];
+    for (const k of OPTIONAL_DOC_KEYS) {
+      if (!optionalEnabled[k]) continue;
+      const f = optFiles[k];
+      if (f) filesToCheck.push(f);
+    }
+    for (const f of filesToCheck) {
+      if (f.size > MAX_UPLOAD_FILE_BYTES) {
+        alert('서류는 파일당 최대 20MB까지 업로드할 수 있습니다.');
+        return;
+      }
     }
     onSubmit({
       optionalEnabled,
@@ -311,6 +335,7 @@ export function PartnerWizardModal({
                 <p className="text-sm font-black text-amber-900">필수 서류</p>
                 <p className="mt-1 text-xs font-medium text-slate-600">
                   지금 첨부하지 않아도 저장됩니다. 이후 &quot;수정&quot;에서 언제든지 추가할 수 있습니다.
+                  각 서류는 파일당 최대 20MB까지 첨부할 수 있습니다.
                 </p>
                 <div className="mt-3 space-y-3">
                   {REQUIRED_DOC_KEYS.map((key) => (
@@ -333,15 +358,18 @@ export function PartnerWizardModal({
                         type="file"
                         accept={ACCEPT}
                         className="mt-1 block w-full text-sm"
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          const raw = e.target.files?.[0] ?? null;
+                          e.target.value = '';
+                          const next = withinUploadLimit(raw) ? raw : null;
                           setReqFiles((prev) => ({
                             ...prev,
-                            [key]: e.target.files?.[0] ?? null,
-                          }))
-                        }
+                            [key]: next,
+                          }));
+                        }}
                       />
                       {mode === 'create' && (
-                        <p className="mt-1 text-[11px] text-slate-500">PDF·이미지·문서 파일</p>
+                        <p className="mt-1 text-[11px] text-slate-500">PDF·이미지·문서 파일 · 파일당 최대 20MB</p>
                       )}
                     </div>
                   ))}
@@ -353,6 +381,7 @@ export function PartnerWizardModal({
                   <p className="text-sm font-black text-slate-800">선택 서류</p>
                   <p className="mt-1 text-xs text-slate-500">
                     지금 첨부하지 않아도 저장됩니다. 이후 &quot;수정&quot;에서 언제든지 추가할 수 있습니다.
+                    각 서류는 파일당 최대 20MB까지 첨부할 수 있습니다.
                   </p>
                   <div className="mt-3 space-y-4">
                     {OPTIONAL_DOC_KEYS.map((key) => {
@@ -386,12 +415,15 @@ export function PartnerWizardModal({
                               type="file"
                               accept={ACCEPT}
                               className="mt-2 block w-full text-sm"
-                              onChange={(e) =>
+                              onChange={(e) => {
+                                const raw = e.target.files?.[0] ?? null;
+                                e.target.value = '';
+                                const next = withinUploadLimit(raw) ? raw : null;
                                 setOptFiles((prev) => ({
                                   ...prev,
-                                  industryLicense: e.target.files?.[0] ?? null,
-                                }))
-                              }
+                                  industryLicense: next,
+                                }));
+                              }}
                             />
                           </div>
                         );
@@ -417,12 +449,15 @@ export function PartnerWizardModal({
                             type="file"
                             accept={ACCEPT}
                             className="mt-2 block w-full text-sm"
-                            onChange={(e) =>
+                            onChange={(e) => {
+                              const raw = e.target.files?.[0] ?? null;
+                              e.target.value = '';
+                              const next = withinUploadLimit(raw) ? raw : null;
                               setOptFiles((prev) => ({
                                 ...prev,
-                                [key]: e.target.files?.[0] ?? null,
-                              }))
-                            }
+                                [key]: next,
+                              }));
+                            }}
                           />
                         </div>
                       );

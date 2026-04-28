@@ -322,7 +322,7 @@ function ContractorPartnersContent() {
       }
     } catch (e) {
       console.error(e);
-      alert('저장 중 오류가 발생했습니다.');
+      alert(e instanceof Error && e.message ? e.message : '저장 중 오류가 발생했습니다.');
     } finally {
       setSubmitting(false);
     }

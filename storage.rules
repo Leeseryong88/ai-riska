@@ -34,7 +34,9 @@ service firebase.storage {
     }
 
     match /contractor-partners/{userId}/{allPaths=**} {
-      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow write: if isAuthenticated() && request.auth.uid == userId
+        && (request.resource == null || request.resource.size <= 20 * 1024 * 1024);
     }
 
     match /meeting-minutes/{userId}/{allPaths=**} {
@@ -42,7 +44,9 @@ service firebase.storage {
     }
 
     match /hazardous-machinery/{userId}/{allPaths=**} {
-      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow write: if isAuthenticated() && request.auth.uid == userId
+        && (request.resource == null || request.resource.size <= 20 * 1024 * 1024);
     }
   }
 }

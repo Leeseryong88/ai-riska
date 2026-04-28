@@ -1,3 +1,4 @@
+import { MAX_UPLOAD_FILE_BYTES } from '@/app/lib/upload-limits';
 import { deleteObject, getDownloadURL, listAll, ref, uploadBytes, type StorageReference } from 'firebase/storage';
 import { storage } from '@/app/lib/firebase';
 
@@ -12,6 +13,9 @@ export async function uploadHazardousMachineryFile(
   file: File
 ): Promise<{ url: string; path: string; fileName: string; fileType: string; uploadedAt: string }> {
   if (!storage) throw new Error('스토리지를 사용할 수 없습니다.');
+  if (file.size > MAX_UPLOAD_FILE_BYTES) {
+    throw new Error('파일은 최대 20MB까지 업로드할 수 있습니다.');
+  }
   const safe = sanitizeSegment(file.name);
   const path = `hazardous-machinery/${userId}/${machineryId}/${Date.now()}_${kind}_${safe}`;
   const storageRef = ref(storage, path);

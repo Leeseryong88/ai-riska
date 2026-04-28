@@ -1,3 +1,4 @@
+import { MAX_UPLOAD_FILE_BYTES } from '@/app/lib/upload-limits';
 import { ref, uploadBytes, getDownloadURL, listAll, deleteObject, type StorageReference } from 'firebase/storage';
 import { storage } from '@/app/lib/firebase';
 
@@ -12,6 +13,9 @@ export async function uploadPartnerFile(
   file: File
 ): Promise<{ url: string; fileName: string }> {
   if (!storage) throw new Error('스토리지를 사용할 수 없습니다.');
+  if (file.size > MAX_UPLOAD_FILE_BYTES) {
+    throw new Error('파일은 최대 20MB까지 업로드할 수 있습니다.');
+  }
   const safe = sanitizeSegment(file.name);
   const path = `contractor-partners/${userId}/${partnerId}/${Date.now()}_${kind}_${safe}`;
   const storageRef = ref(storage, path);

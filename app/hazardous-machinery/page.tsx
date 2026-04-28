@@ -38,6 +38,7 @@ import {
 import { Button } from '@/app/safety-log/_components/ui/Button';
 import { cn } from '@/app/safety-log/_lib/utils';
 import { Pagination } from '@/components/ui/Pagination';
+import { MAX_UPLOAD_FILE_BYTES } from '@/app/lib/upload-limits';
 import {
   deleteHazardousMachineryFile,
   deleteHazardousMachineryStorageFiles,
@@ -449,6 +450,10 @@ function HazardousMachineryContent() {
 
   const handleUpload = async (type: DocumentType, file: File | null) => {
     if (!user || !selected || !file) return;
+    if (file.size > MAX_UPLOAD_FILE_BYTES) {
+      alert('보관 서류는 파일당 최대 20MB까지 업로드할 수 있습니다.');
+      return;
+    }
     setUploadingType(type);
     try {
       const uploaded = await uploadHazardousMachineryFile(user.uid, selected.id, type, file);
@@ -465,7 +470,7 @@ function HazardousMachineryContent() {
       setItems((prev) => prev.map((item) => item.id === selected.id ? nextSelected : item));
     } catch (e) {
       console.error(e);
-      alert('파일 업로드 중 오류가 발생했습니다.');
+      alert(e instanceof Error && e.message ? e.message : '파일 업로드 중 오류가 발생했습니다.');
     } finally {
       setUploadingType(null);
     }
@@ -813,6 +818,7 @@ function DocumentBox({
         <div>
           <h5 className="font-black text-slate-900">{meta.label}</h5>
           <p className="mt-1 text-xs font-medium text-slate-500">{meta.helper}</p>
+          <p className="mt-0.5 text-[11px] font-medium text-slate-400">파일당 최대 20MB</p>
         </div>
         <label
           className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl bg-white text-amber-700 shadow-sm ring-1 ring-amber-100 transition hover:bg-amber-50"

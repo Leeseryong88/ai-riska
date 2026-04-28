@@ -429,7 +429,7 @@ export default function WorkPlanPage() {
                 <div>
                   <h2 className="text-lg font-black text-slate-900">양식 선택</h2>
                   <p className="mt-1 text-sm font-medium text-slate-500">
-                    산업안전보건기준에 관한 규칙 제38조의 13개 작업 대상 기준으로 고정했습니다.
+                    산업안전보건기준에 관한 규칙 제38조의 13개 작업 대상으로 고정했습니다.
                   </p>
                 </div>
               </div>
