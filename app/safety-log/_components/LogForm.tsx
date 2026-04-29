@@ -98,6 +98,12 @@ export const LogForm: React.FC<LogFormProps> = ({ initialData, onSubmit, onCance
     [affiliationOptionItems]
   );
 
+  const getSelectableAffiliationOptions = (details: Record<string, number>, currentAffiliation: string) => {
+    return affiliationOptionItems.filter(
+      (option) => option.value === currentAffiliation || !Object.prototype.hasOwnProperty.call(details, option.value)
+    );
+  };
+
   const makeUniqueAffiliation = (base: string, details: Record<string, number>, exclude?: string) => {
     const cleanBase = base.trim() || '직접입력';
     if (cleanBase === exclude || !Object.prototype.hasOwnProperty.call(details, cleanBase)) return cleanBase;
@@ -148,7 +154,10 @@ export const LogForm: React.FC<LogFormProps> = ({ initialData, onSubmit, onCance
   const addManpowerRow = () => {
     if (!formData.manpower) return;
     const details = formData.manpower.details || {};
-    const nextAffiliation = makeUniqueAffiliation(affiliationOptions[0] || '직접입력', details);
+    const nextPresetAffiliation = affiliationOptionItems.find(
+      (option) => !Object.prototype.hasOwnProperty.call(details, option.value)
+    )?.value;
+    const nextAffiliation = makeUniqueAffiliation(nextPresetAffiliation || '직접입력', details);
     setFormData(prev => ({
       ...prev,
       manpower: recalculateManpower({ ...details, [nextAffiliation]: 0 })
@@ -334,6 +343,8 @@ export const LogForm: React.FC<LogFormProps> = ({ initialData, onSubmit, onCance
             )}
             <div className="space-y-3">
               {Object.entries(formData.manpower.details || {}).map(([affiliation, count]) => {
+                const details = formData.manpower?.details || {};
+                const selectableOptions = getSelectableAffiliationOptions(details, affiliation);
                 const isKnownAffiliation = affiliationOptions.includes(affiliation);
                 const selectedOption = affiliationOptionItems.find((option) => option.value === affiliation);
                 const isContractor = selectedOption?.type === 'contractor';
@@ -346,7 +357,7 @@ export const LogForm: React.FC<LogFormProps> = ({ initialData, onSubmit, onCance
                         onChange={e => handleManpowerAffiliationChange(affiliation, e.target.value)}
                         className="h-10 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm font-semibold text-gray-800 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
                       >
-                        {affiliationOptionItems.map(option => (
+                        {selectableOptions.map(option => (
                           <option key={option.value} value={option.value}>
                             {option.type === 'contractor' ? `협력업체 · ${option.value}` : option.value}
                           </option>
