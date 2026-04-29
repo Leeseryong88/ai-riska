@@ -67,6 +67,7 @@ interface HazardousMachinery {
   managerId: string;
   name: string;
   category: string;
+  managementNo: string;
   location: string;
   modelName: string;
   serialNo: string;
@@ -81,8 +82,8 @@ interface HazardousMachinery {
 }
 
 interface MachineryForm {
-  name: string;
   category: string;
+  managementNo: string;
   location: string;
   modelName: string;
   serialNo: string;
@@ -102,9 +103,13 @@ const EMPTY_DOCS: MachineryDocuments = {
   etc: [],
 };
 
+const MODAL_DOCUMENT_TYPES: DocumentType[] = ['certificate', 'inspection'];
+
+type PendingMachineryDocuments = Partial<Record<DocumentType, File[]>>;
+
 const EMPTY_FORM: MachineryForm = {
-  name: '',
   category: '크레인',
+  managementNo: '',
   location: '',
   modelName: '',
   serialNo: '',
@@ -231,8 +236,9 @@ function normalizeMachinery(id: string, data: any): HazardousMachinery {
   return {
     id,
     managerId: String(data.managerId || ''),
-    name: String(data.name || ''),
+    name: String(data.name || data.category || ''),
     category: String(data.category || '기타'),
+    managementNo: String(data.managementNo || ''),
     location: String(data.location || ''),
     modelName: String(data.modelName || ''),
     serialNo: String(data.serialNo || ''),
@@ -256,8 +262,8 @@ function formatDate(dateText: string) {
 
 function toForm(item: HazardousMachinery): MachineryForm {
   return {
-    name: item.name,
     category: item.category,
+    managementNo: item.managementNo,
     location: item.location,
     modelName: item.modelName,
     serialNo: item.serialNo,
@@ -279,6 +285,7 @@ function HazardousMachineryContent() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<HazardousMachinery | null>(null);
   const [form, setForm] = useState<MachineryForm>(EMPTY_FORM);
+  const [pendingDocuments, setPendingDocuments] = useState<PendingMachineryDocuments>({});
   const [submitting, setSubmitting] = useState(false);
   const [uploadingType, setUploadingType] = useState<DocumentType | null>(null);
 
@@ -344,7 +351,7 @@ function HazardousMachineryContent() {
     const needle = queryText.trim().toLowerCase();
     const result = needle
       ? items.filter((item) =>
-          [item.name, item.category, item.location, item.modelName, item.serialNo, item.maker]
+          [item.name, item.category, item.managementNo, item.location, item.modelName, item.serialNo, item.maker]
             .join(' ')
             .toLowerCase()
             .includes(needle)
@@ -353,7 +360,7 @@ function HazardousMachineryContent() {
     return [...result].sort((a, b) => {
       const ad = daysUntil(a.nextInspectionDate);
       const bd = daysUntil(b.nextInspectionDate);
-      if (ad === null && bd === null) return a.name.localeCompare(b.name, 'ko');
+      if (ad === null && bd === null) return a.category.localeCompare(b.category, 'ko');
       if (ad === null) return 1;
       if (bd === null) return -1;
       return ad - bd;
@@ -374,20 +381,48 @@ function HazardousMachineryContent() {
   const openCreate = () => {
     setEditing(null);
     setForm(EMPTY_FORM);
+    setPendingDocuments({});
     setModalOpen(true);
   };
 
   const openEdit = (item: HazardousMachinery) => {
     setEditing(item);
     setForm(toForm(item));
+    setPendingDocuments({});
     setModalOpen(true);
+  };
+
+  const uploadPendingDocuments = async (
+    userId: string,
+    machineryId: string,
+    baseDocuments: MachineryDocuments
+  ): Promise<MachineryDocuments> => {
+    const nextDocs: MachineryDocuments = {
+      certificate: [...baseDocuments.certificate],
+      inspection: [...baseDocuments.inspection],
+      manual: [...baseDocuments.manual],
+      etc: [...baseDocuments.etc],
+    };
+
+    for (const type of MODAL_DOCUMENT_TYPES) {
+      const files = pendingDocuments[type] || [];
+      for (const file of files) {
+        if (file.size > MAX_UPLOAD_FILE_BYTES) {
+          throw new Error('보관 서류는 파일당 최대 20MB까지 업로드할 수 있습니다.');
+        }
+        const uploaded = await uploadHazardousMachineryFile(userId, machineryId, type, file);
+        nextDocs[type] = [...nextDocs[type], uploaded];
+      }
+    }
+
+    return nextDocs;
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!user) return;
-    if (!form.name.trim()) {
-      alert('기계기구명을 입력해 주세요.');
+    if (!form.category.trim()) {
+      alert('종류를 선택해 주세요.');
       return;
     }
 
@@ -398,8 +433,9 @@ function HazardousMachineryContent() {
         form.nextInspectionDate || addMonthsToDate(form.lastInspectionDate, cycle);
       const payload = {
         managerId: user.uid,
-        name: form.name.trim(),
+        name: form.category.trim(),
         category: form.category,
+        managementNo: form.managementNo.trim(),
         location: form.location.trim(),
         modelName: form.modelName.trim(),
         serialNo: form.serialNo.trim(),
@@ -412,22 +448,28 @@ function HazardousMachineryContent() {
       };
 
       if (editing) {
-        await updateDoc(doc(db, 'hazardous_machinery', editing.id), payload);
+        const documents = await uploadPendingDocuments(user.uid, editing.id, editing.documents);
+        await updateDoc(doc(db, 'hazardous_machinery', editing.id), {
+          ...payload,
+          documents,
+        });
       } else {
         const itemRef = doc(collection(db, 'hazardous_machinery'));
+        const documents = await uploadPendingDocuments(user.uid, itemRef.id, EMPTY_DOCS);
         await setDoc(itemRef, {
           ...payload,
-          documents: EMPTY_DOCS,
+          documents,
           createdAt: serverTimestamp(),
         });
       }
 
       setModalOpen(false);
       setEditing(null);
+      setPendingDocuments({});
       await load();
     } catch (e) {
       console.error(e);
-      alert('저장 중 오류가 발생했습니다.');
+      alert(e instanceof Error && e.message ? e.message : '저장 중 오류가 발생했습니다.');
     } finally {
       setSubmitting(false);
     }
@@ -435,7 +477,7 @@ function HazardousMachineryContent() {
 
   const handleDelete = async (item: HazardousMachinery) => {
     if (!user) return;
-    if (!confirm(`${item.name} 항목과 첨부 서류를 삭제할까요?`)) return;
+    if (!confirm(`${item.category} 항목과 첨부 서류를 삭제할까요?`)) return;
 
     try {
       await deleteHazardousMachineryStorageFiles(user.uid, item.id);
@@ -553,7 +595,7 @@ function HazardousMachineryContent() {
                   setQueryText(e.target.value);
                   setPage(1);
                 }}
-                placeholder="이름, 위치, 제조사 검색"
+                placeholder="종류, 관리번호, 위치 검색"
                 className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm font-semibold outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100 sm:w-64"
               />
             </div>
@@ -612,6 +654,8 @@ function HazardousMachineryContent() {
             form={form}
             setForm={setForm}
             editing={editing}
+            pendingDocuments={pendingDocuments}
+            setPendingDocuments={setPendingDocuments}
             submitting={submitting}
             onClose={() => setModalOpen(false)}
             onSubmit={handleSubmit}
@@ -672,9 +716,9 @@ function MachineryListItem({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-base font-black text-slate-950">{item.name}</p>
+          <p className="truncate text-base font-black text-slate-950">{item.category}</p>
           <p className="mt-1 truncate text-xs font-bold text-slate-500">
-            {item.category} · {item.location || '위치 미등록'}
+            {item.managementNo || '관리번호 미등록'} · {item.location || '위치 미등록'}
           </p>
         </div>
         <span className={cn('inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-1 text-[11px] font-black', status.tone)}>
@@ -716,9 +760,9 @@ function MachineryDetail({
             <StatusIcon className="h-4 w-4" />
             다음 검사 {status.label}
           </div>
-          <h3 className="mt-3 text-2xl font-black tracking-tight text-slate-950">{item.name}</h3>
+          <h3 className="mt-3 text-2xl font-black tracking-tight text-slate-950">{item.category}</h3>
           <p className="mt-1 text-sm font-bold text-slate-500">
-            {item.category} · {item.location || '위치 미등록'}
+            {item.managementNo || '관리번호 미등록'} · {item.location || '위치 미등록'}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -734,6 +778,7 @@ function MachineryDetail({
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
+        <InfoTile label="관리번호" value={item.managementNo || '-'} icon={ClipboardCheck} />
         <InfoTile label="모델/형식" value={item.modelName || '-'} icon={Gauge} />
         <InfoTile label="제조사" value={item.maker || '-'} icon={Wrench} />
         <InfoTile label="제조번호" value={item.serialNo || '-'} icon={ClipboardCheck} />
@@ -884,6 +929,8 @@ function MachineryModal({
   form,
   setForm,
   editing,
+  pendingDocuments,
+  setPendingDocuments,
   submitting,
   onClose,
   onSubmit,
@@ -891,6 +938,8 @@ function MachineryModal({
   form: MachineryForm;
   setForm: React.Dispatch<React.SetStateAction<MachineryForm>>;
   editing: HazardousMachinery | null;
+  pendingDocuments: PendingMachineryDocuments;
+  setPendingDocuments: React.Dispatch<React.SetStateAction<PendingMachineryDocuments>>;
   submitting: boolean;
   onClose: () => void;
   onSubmit: (event: React.FormEvent) => void;
@@ -922,15 +971,7 @@ function MachineryModal({
 
         <form onSubmit={onSubmit} className="max-h-[calc(92vh-5rem)] overflow-y-auto px-6 py-5">
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="기계기구명" required>
-              <input
-                value={form.name}
-                onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-                placeholder="예: 천장크레인 2호기"
-                className="form-input"
-              />
-            </Field>
-            <Field label="종류">
+            <Field label="종류" required>
               <select
                 value={form.category}
                 onChange={(e) => {
@@ -949,6 +990,14 @@ function MachineryModal({
                   <option key={option} value={option}>{option}</option>
                 ))}
               </select>
+            </Field>
+            <Field label="관리번호">
+              <input
+                value={form.managementNo}
+                onChange={(e) => setForm((prev) => ({ ...prev, managementNo: e.target.value }))}
+                placeholder="예: CR-2026-001"
+                className="form-input"
+              />
             </Field>
             <Field label="설치/사용 위치">
               <input
@@ -1021,6 +1070,76 @@ function MachineryModal({
                 className="form-input min-h-24 resize-y"
               />
             </Field>
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-amber-100 bg-amber-50/40 p-4">
+            <div>
+              <p className="text-sm font-black text-slate-900">등록 서류 첨부</p>
+              <p className="mt-1 text-xs font-semibold text-slate-500">
+                등록 단계에서 인증서류와 검사서류를 함께 업로드할 수 있습니다. 파일당 최대 20MB입니다.
+              </p>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {MODAL_DOCUMENT_TYPES.map((type) => {
+                const meta = DOCUMENT_META[type];
+                const files = pendingDocuments[type] || [];
+                return (
+                  <div key={type} className="rounded-2xl border border-white bg-white p-4 shadow-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-black text-slate-900">{meta.label}</p>
+                        <p className="mt-1 text-xs font-medium text-slate-500">{meta.helper}</p>
+                      </div>
+                      <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-amber-600 px-3 py-2 text-xs font-black text-white transition hover:bg-amber-700">
+                        <UploadCloud className="h-4 w-4" />
+                        첨부
+                        <input
+                          type="file"
+                          multiple
+                          className="hidden"
+                          disabled={submitting}
+                          onChange={(event) => {
+                            const nextFiles = Array.from(event.target.files || []);
+                            setPendingDocuments((prev) => ({
+                              ...prev,
+                              [type]: [...(prev[type] || []), ...nextFiles],
+                            }));
+                            event.currentTarget.value = '';
+                          }}
+                        />
+                      </label>
+                    </div>
+                    <div className="mt-3 space-y-2">
+                      {files.length === 0 ? (
+                        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-center text-xs font-bold text-slate-400">
+                          첨부된 파일이 없습니다.
+                        </div>
+                      ) : (
+                        files.map((file, index) => (
+                          <div key={`${file.name}-${index}`} className="flex items-center gap-2 rounded-xl bg-slate-50 p-2">
+                            <FileText className="h-4 w-4 shrink-0 text-slate-400" />
+                            <span className="min-w-0 flex-1 truncate text-xs font-black text-slate-700">{file.name}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPendingDocuments((prev) => ({
+                                  ...prev,
+                                  [type]: (prev[type] || []).filter((_, fileIndex) => fileIndex !== index),
+                                }));
+                              }}
+                              className="rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                              aria-label={`${file.name} 첨부 제거`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           <div className="mt-6 flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">

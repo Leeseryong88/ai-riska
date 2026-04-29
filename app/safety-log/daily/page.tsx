@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import WorkspaceShell from '@/components/navigation/WorkspaceShell';
 import { LogList } from '../_components/LogList';
 import { LogForm } from '../_components/LogForm';
@@ -36,6 +36,8 @@ function SafetyDailyLogContent() {
   const [selectedLog, setSelectedLog] = useState<SafetyLog | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [filterStartDate, setFilterStartDate] = useState('');
+  const [filterEndDate, setFilterEndDate] = useState('');
 
   const fetchLogs = async () => {
     if (!user) return;
@@ -66,9 +68,21 @@ function SafetyDailyLogContent() {
     fetchLogs();
   }, [user]);
 
-  const totalPages = Math.max(1, Math.ceil(logs.length / ITEMS_PER_PAGE));
+  const filteredLogs = useMemo(() => {
+    return logs.filter((log) => {
+      if (filterStartDate && log.date < filterStartDate) return false;
+      if (filterEndDate && log.date > filterEndDate) return false;
+      return true;
+    });
+  }, [filterEndDate, filterStartDate, logs]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / ITEMS_PER_PAGE));
   const pageStart = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedLogs = logs.slice(pageStart, pageStart + ITEMS_PER_PAGE);
+  const paginatedLogs = filteredLogs.slice(pageStart, pageStart + ITEMS_PER_PAGE);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterStartDate, filterEndDate]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -212,6 +226,50 @@ function SafetyDailyLogContent() {
           </div>
         ) : (
           <div className="space-y-6">
+            <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <p className="text-sm font-black text-gray-900">기간 필터</p>
+                  <p className="mt-1 text-xs font-bold text-gray-400">점검 일자를 기준으로 목록을 좁혀 볼 수 있습니다.</p>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+                  <label className="space-y-1">
+                    <span className="text-[10px] font-black text-gray-400">시작일</span>
+                    <input
+                      type="date"
+                      value={filterStartDate}
+                      onChange={(event) => setFilterStartDate(event.target.value)}
+                      className="h-10 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm font-bold text-gray-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
+                    />
+                  </label>
+                  <label className="space-y-1">
+                    <span className="text-[10px] font-black text-gray-400">종료일</span>
+                    <input
+                      type="date"
+                      value={filterEndDate}
+                      onChange={(event) => setFilterEndDate(event.target.value)}
+                      className="h-10 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm font-bold text-gray-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
+                    />
+                  </label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setFilterStartDate('');
+                      setFilterEndDate('');
+                    }}
+                    disabled={!filterStartDate && !filterEndDate}
+                  >
+                    초기화
+                  </Button>
+                </div>
+              </div>
+              <p className="mt-3 text-xs font-bold text-blue-600">
+                표시 중 {filteredLogs.length}건
+              </p>
+            </div>
+
             <LogList
               logs={paginatedLogs}
               startNumber={pageStart + 1}
@@ -222,7 +280,7 @@ function SafetyDailyLogContent() {
               onDelete={handleDeleteLog}
             />
 
-            {logs.length > ITEMS_PER_PAGE && (
+            {filteredLogs.length > ITEMS_PER_PAGE && (
               <div className="flex items-center justify-center gap-2 pt-2">
                 <Button
                   variant="outline"

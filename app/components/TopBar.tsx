@@ -8,7 +8,8 @@ import ServiceGlyph from '@/components/navigation/ServiceGlyph';
 import { useAuth } from '@/app/context/AuthContext';
 import { isAdminUid } from '@/lib/admin-client';
 import { signOut } from 'firebase/auth';
-import { auth } from '@/app/lib/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
+import { auth, db } from '@/app/lib/firebase';
 
 interface TopBarProps {
   onOpenContact?: () => void;
@@ -21,6 +22,9 @@ export default function TopBar({ onOpenContact }: TopBarProps) {
   const { user, userProfile } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [orgDraft, setOrgDraft] = useState('');
+  const [orgSaving, setOrgSaving] = useState(false);
+  const [orgFeedback, setOrgFeedback] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const search = searchParams.toString();
   const hrefForService = `${pathname}${search ? `?${search}` : ''}`;
   const currentService = getServiceByHref(hrefForService);
@@ -41,10 +45,37 @@ export default function TopBar({ onOpenContact }: TopBarProps) {
     }
   };
 
+  const handleSaveOrganization = async () => {
+    if (!user) return;
+    const clean = orgDraft.trim();
+    if (!clean) {
+      setOrgFeedback({ type: 'err', text: '소속을 입력해 주세요.' });
+      return;
+    }
+    setOrgSaving(true);
+    setOrgFeedback(null);
+    try {
+      await updateDoc(doc(db, 'users', user.uid), { organization: clean });
+      setOrgFeedback({ type: 'ok', text: '저장했습니다.' });
+    } catch (e) {
+      console.error('소속 저장 오류:', e);
+      setOrgFeedback({ type: 'err', text: '저장에 실패했습니다. 잠시 후 다시 시도해 주세요.' });
+    } finally {
+      setOrgSaving(false);
+    }
+  };
+
   // Close mobile menu when pathname changes
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (isUserMenuOpen && user) {
+      setOrgDraft(userProfile?.organization ?? '');
+      setOrgFeedback(null);
+    }
+  }, [isUserMenuOpen, user, userProfile?.organization]);
 
   // Prevent scrolling when mobile menu is open
   useEffect(() => {
@@ -141,10 +172,42 @@ export default function TopBar({ onOpenContact }: TopBarProps) {
                 </button>
                 
                 {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 rounded-xl bg-white shadow-xl border border-slate-100 py-2 z-50">
-                    <div className="px-4 py-2 border-b border-slate-50">
-                      <p className="text-xs text-slate-400 font-medium">소속: {userProfile?.organization || '미지정'}</p>
-                      <p className="text-xs text-slate-400 font-medium truncate">{user.email}</p>
+                  <div className="absolute right-0 mt-2 w-[17.5rem] rounded-xl bg-white shadow-xl border border-slate-100 py-2 z-50">
+                    <div className="px-4 py-2 border-b border-slate-50 space-y-2">
+                      <p className="text-xs text-slate-400 font-medium truncate" title={user.email ?? undefined}>
+                        {user.email}
+                      </p>
+                      <div>
+                        <label htmlFor="topbar-org" className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                          소속
+                        </label>
+                        <input
+                          id="topbar-org"
+                          type="text"
+                          autoComplete="organization"
+                          value={orgDraft}
+                          onChange={(e) => setOrgDraft(e.target.value)}
+                          className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-800 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200"
+                          placeholder="회사·현장명 등"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleSaveOrganization}
+                          disabled={
+                            orgSaving || orgDraft.trim() === (userProfile?.organization ?? '').trim()
+                          }
+                          className="mt-2 w-full rounded-lg bg-slate-900 py-1.5 text-xs font-bold text-white transition hover:bg-slate-800 disabled:opacity-40 disabled:hover:bg-slate-900"
+                        >
+                          {orgSaving ? '저장 중…' : '소속 저장'}
+                        </button>
+                        {orgFeedback && (
+                          <p
+                            className={`mt-1.5 text-[10px] font-medium ${orgFeedback.type === 'ok' ? 'text-emerald-600' : 'text-red-600'}`}
+                          >
+                            {orgFeedback.text}
+                          </p>
+                        )}
+                      </div>
                     </div>
                     <Link
                       href="/subscription"

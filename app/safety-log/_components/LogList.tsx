@@ -10,7 +10,6 @@ import {
   Snowflake,
   Wind,
   Trash2,
-  ChevronRight,
   FileText,
   Info,
 } from 'lucide-react';
@@ -55,10 +54,11 @@ export const LogList: React.FC<LogListProps> = ({ logs, onSelect, onDelete, star
     <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
       <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-200 text-xs font-black text-gray-500 uppercase tracking-wider">
         <div className="col-span-1 text-center">번호</div>
-        <div className="col-span-5">제목</div>
+        <div className="col-span-4">제목</div>
         <div className="col-span-2 text-center">날씨</div>
         <div className="col-span-3 text-center">점검 일자</div>
-        <div className="col-span-1 text-center">작업</div>
+        <div className="col-span-1 text-center">삭제</div>
+        <div className="col-span-1 text-center">문서</div>
       </div>
       <div className="divide-y divide-gray-100">
         {logs.map((log, index) => {
@@ -76,7 +76,7 @@ export const LogList: React.FC<LogListProps> = ({ logs, onSelect, onDelete, star
               <span className="text-sm font-black text-blue-600">{rowNumber}</span>
             </div>
 
-            <div className="col-span-1 md:col-span-5 flex items-center gap-3 min-w-0">
+            <div className="col-span-1 md:col-span-4 flex items-center gap-3 min-w-0">
               <div className="md:hidden w-8 h-8 shrink-0 rounded-lg bg-blue-100 flex items-center justify-center">
                 <span className="text-xs font-black text-blue-600">{rowNumber}</span>
               </div>
@@ -120,9 +120,21 @@ export const LogList: React.FC<LogListProps> = ({ logs, onSelect, onDelete, star
               >
                 <Trash2 className="w-4 h-4" />
               </button>
-              <div className="p-2 text-blue-600">
-                <ChevronRight className="w-4 h-4" />
-              </div>
+            </div>
+
+            <div className="col-span-1 md:col-span-1 flex justify-end md:justify-center">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelect(log);
+                }}
+                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                title="문서 보기"
+                aria-label="문서 보기"
+              >
+                <FileText className="w-4 h-4" />
+              </button>
             </div>
           </motion.div>
           );

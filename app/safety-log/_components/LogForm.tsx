@@ -1,11 +1,14 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { SafetyLog, Weather, SafetyCheckItem } from '../_lib/types';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { SafetyLog, Weather } from '../_lib/types';
 import { Button, Input, Card, Label } from './ui/Button';
-import { Sun, Cloud, CloudRain, Snowflake, Wind, Plus, Trash2, CheckCircle2, Image as ImageIcon, X, Loader2 } from 'lucide-react';
+import { Sun, Cloud, CloudRain, Snowflake, Wind, Plus, Trash2, CheckCircle2, Image as ImageIcon, X, Loader2, MessageSquarePlus } from 'lucide-react';
 import { cn } from '../_lib/utils';
 import { compressImage } from '@/app/lib/image-utils';
+import { useAuth } from '@/app/context/AuthContext';
+import { db } from '@/app/lib/firebase';
+import { collection, getDocs, orderBy, query, where } from 'firebase/firestore';
 
 interface LogFormProps {
   initialData?: SafetyLog;
@@ -25,8 +28,11 @@ const DEFAULT_CHECK_ITEMS: string[] = [
 ];
 
 export const LogForm: React.FC<LogFormProps> = ({ initialData, onSubmit, onCancel, submitting }) => {
+  const { user, userProfile } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isCompressing, setIsCompressing] = useState(false);
+  const [contractorNames, setContractorNames] = useState<string[]>([]);
+  const [commentPromptId, setCommentPromptId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<SafetyLog>>({
     title: '',
     date: new Date().toISOString().split('T')[0],
@@ -49,24 +55,100 @@ export const LogForm: React.FC<LogFormProps> = ({ initialData, onSubmit, onCance
     }
   }, [initialData]);
 
+  useEffect(() => {
+    const loadContractors = async () => {
+      if (!user) {
+        setContractorNames([]);
+        return;
+      }
+
+      try {
+        const q = query(
+          collection(db, 'contractor_partners'),
+          where('managerId', '==', user.uid),
+          orderBy('createdAt', 'desc')
+        );
+        const snap = await getDocs(q);
+        const names = snap.docs
+          .map((doc) => String(doc.data().companyName || '').trim())
+          .filter(Boolean);
+        setContractorNames(Array.from(new Set(names)));
+      } catch (error) {
+        console.error('협력업체 목록 로드 오류:', error);
+      }
+    };
+
+    loadContractors();
+  }, [user]);
+
+  const affiliationOptions = useMemo(() => {
+    const ownOrganization = userProfile?.organization?.trim();
+    return Array.from(new Set([ownOrganization, ...contractorNames].filter(Boolean) as string[]));
+  }, [contractorNames, userProfile?.organization]);
+
+  const makeUniqueAffiliation = (base: string, details: Record<string, number>, exclude?: string) => {
+    const cleanBase = base.trim() || '직접입력';
+    if (cleanBase === exclude || !Object.prototype.hasOwnProperty.call(details, cleanBase)) return cleanBase;
+    let index = 2;
+    while (Object.prototype.hasOwnProperty.call(details, `${cleanBase} ${index}`)) {
+      index += 1;
+    }
+    return `${cleanBase} ${index}`;
+  };
+
+  const recalculateManpower = (details: Record<string, number>) => ({
+    total: Object.values(details).reduce((sum, count) => sum + (Number(count) || 0), 0),
+    details,
+  });
+
   const handleManpowerToggle = () => {
     if (formData.manpower) {
       setFormData(prev => ({ ...prev, manpower: null as any }));
     } else {
+      const firstAffiliation = affiliationOptions[0] || '직접입력';
       setFormData(prev => ({
         ...prev,
-        manpower: { total: 0, details: { '직영': 0, '협력': 0 } }
+        manpower: { total: 0, details: { [firstAffiliation]: 0 } }
       }));
     }
   };
 
-  const handleManpowerChange = (role: string, count: number) => {
+  const handleManpowerCountChange = (affiliation: string, count: number) => {
     if (!formData.manpower) return;
-    const newDetails = { ...formData.manpower.details, [role]: count };
-    const newTotal = Object.values(newDetails).reduce((sum, c) => sum + (c as number), 0);
+    const newDetails = { ...formData.manpower.details, [affiliation]: count };
     setFormData(prev => ({
       ...prev,
-      manpower: { total: newTotal, details: newDetails }
+      manpower: recalculateManpower(newDetails)
+    }));
+  };
+
+  const handleManpowerAffiliationChange = (currentAffiliation: string, nextAffiliation: string) => {
+    if (!formData.manpower) return;
+    const currentDetails = formData.manpower.details || {};
+    const { [currentAffiliation]: currentCount = 0, ...rest } = currentDetails;
+    const cleanNext = makeUniqueAffiliation(nextAffiliation === '__custom__' ? '직접입력' : nextAffiliation, rest, currentAffiliation);
+    setFormData(prev => ({
+      ...prev,
+      manpower: recalculateManpower({ ...rest, [cleanNext]: currentCount })
+    }));
+  };
+
+  const addManpowerRow = () => {
+    if (!formData.manpower) return;
+    const details = formData.manpower.details || {};
+    const nextAffiliation = makeUniqueAffiliation(affiliationOptions[0] || '직접입력', details);
+    setFormData(prev => ({
+      ...prev,
+      manpower: recalculateManpower({ ...details, [nextAffiliation]: 0 })
+    }));
+  };
+
+  const removeManpowerRow = (affiliation: string) => {
+    if (!formData.manpower) return;
+    const { [affiliation]: _removed, ...rest } = formData.manpower.details || {};
+    setFormData(prev => ({
+      ...prev,
+      manpower: Object.keys(rest).length ? recalculateManpower(rest) : { total: 0, details: {} }
     }));
   };
 
@@ -74,7 +156,19 @@ export const LogForm: React.FC<LogFormProps> = ({ initialData, onSubmit, onCance
     setFormData(prev => ({
       ...prev,
       safetyChecks: prev.safetyChecks?.map(item =>
-        item.id === id ? { ...item, checked: !item.checked } : item
+        item.id === id
+          ? { ...item, checked: !item.checked, remark: item.checked ? undefined : item.remark }
+          : item
+      )
+    }));
+    setCommentPromptId(null);
+  };
+
+  const handleCheckRemarkChange = (id: string, remark: string | undefined) => {
+    setFormData(prev => ({
+      ...prev,
+      safetyChecks: prev.safetyChecks?.map(item =>
+        item.id === id ? { ...item, remark } : item
       )
     }));
   };
@@ -204,7 +298,7 @@ export const LogForm: React.FC<LogFormProps> = ({ initialData, onSubmit, onCance
 
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <Label>출력 인원 현황 <span className="text-[10px] text-gray-400 font-normal">(선택)</span></Label>
+          <Label>작업인원 <span className="text-[10px] text-gray-400 font-normal">(선택)</span></Label>
           <button 
             type="button" 
             onClick={handleManpowerToggle}
@@ -222,25 +316,60 @@ export const LogForm: React.FC<LogFormProps> = ({ initialData, onSubmit, onCance
               <span className="text-xs font-bold text-gray-500">총 투입 인원</span>
               <span className="text-sm font-black text-blue-600">{formData.manpower.total}명</span>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <span className="text-[10px] font-bold text-gray-400 uppercase">직영</span>
-                <Input
-                  type="number"
-                  min="0"
-                  value={formData.manpower.details?.['직영'] || 0}
-                  onChange={e => handleManpowerChange('직영', parseInt(e.target.value) || 0)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <span className="text-[10px] font-bold text-gray-400 uppercase">협력업체</span>
-                <Input
-                  type="number"
-                  min="0"
-                  value={formData.manpower.details?.['협력'] || 0}
-                  onChange={e => handleManpowerChange('협력', parseInt(e.target.value) || 0)}
-                />
-              </div>
+            <div className="space-y-3">
+              {Object.entries(formData.manpower.details || {}).map(([affiliation, count]) => {
+                const isKnownAffiliation = affiliationOptions.includes(affiliation);
+                return (
+                  <div key={affiliation} className="grid gap-2 rounded-xl border border-gray-100 bg-white p-3 sm:grid-cols-[minmax(0,1fr)_8rem_auto] sm:items-end">
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase">소속</span>
+                      <select
+                        value={isKnownAffiliation ? affiliation : '__custom__'}
+                        onChange={e => handleManpowerAffiliationChange(affiliation, e.target.value)}
+                        className="h-10 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm font-semibold text-gray-800 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
+                      >
+                        {affiliationOptions.map(option => (
+                          <option key={option} value={option}>{option}</option>
+                        ))}
+                        <option value="__custom__">직접입력</option>
+                      </select>
+                      {!isKnownAffiliation && (
+                        <Input
+                          type="text"
+                          value={affiliation}
+                          onChange={e => handleManpowerAffiliationChange(affiliation, e.target.value)}
+                          placeholder="소속 직접 입력"
+                        />
+                      )}
+                    </div>
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase">인원</span>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={count || 0}
+                        onChange={e => handleManpowerCountChange(affiliation, parseInt(e.target.value) || 0)}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeManpowerRow(affiliation)}
+                      className="flex h-10 w-10 items-center justify-center rounded-xl text-gray-300 transition hover:bg-red-50 hover:text-red-500"
+                      aria-label={`${affiliation} 작업인원 삭제`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                );
+              })}
+              <button
+                type="button"
+                onClick={addManpowerRow}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-blue-200 bg-blue-50/50 py-2 text-xs font-black text-blue-600 transition hover:bg-blue-50"
+              >
+                <Plus className="h-4 w-4" />
+                소속 추가
+              </button>
             </div>
           </Card>
         ) : (
@@ -307,18 +436,74 @@ export const LogForm: React.FC<LogFormProps> = ({ initialData, onSubmit, onCance
         <Label>안전 점검 항목</Label>
         <div className="space-y-2">
           {formData.safetyChecks?.map(item => (
-            <div
-              key={item.id}
-              onClick={() => handleCheckToggle(item.id)}
-              className={cn(
-                "flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer",
-                item.checked
-                  ? "bg-emerald-50 border-emerald-100 text-emerald-700"
-                  : "bg-white border-gray-100 text-gray-500 hover:border-gray-200"
+            <div key={item.id} className="space-y-2">
+              <div
+                onClick={() => handleCheckToggle(item.id)}
+                className={cn(
+                  "flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer",
+                  item.checked
+                    ? "bg-emerald-50 border-emerald-100 text-emerald-700"
+                    : "bg-white border-gray-100 text-gray-500 hover:border-gray-200"
+                )}
+              >
+                <CheckCircle2 className={cn("w-5 h-5", item.checked ? "text-emerald-500" : "text-gray-200")} />
+                <span className="flex-1 text-sm font-medium">{item.label}</span>
+                {item.checked && item.remark === undefined && (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setCommentPromptId(item.id);
+                    }}
+                    className="rounded-lg p-1.5 text-emerald-600 transition hover:bg-white"
+                    title="의견 추가"
+                    aria-label={`${item.label} 의견 추가`}
+                  >
+                    <MessageSquarePlus className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+              {commentPromptId === item.id && (
+                <div className="ml-8 flex items-center justify-between gap-3 rounded-xl border border-emerald-100 bg-emerald-50/70 px-3 py-2">
+                  <p className="text-xs font-bold text-emerald-700">이 점검 항목에 의견을 추가하시겠습니까?</p>
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleCheckRemarkChange(item.id, '');
+                        setCommentPromptId(null);
+                      }}
+                      className="rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-black text-white"
+                    >
+                      예
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCommentPromptId(null)}
+                      className="rounded-lg bg-white px-2.5 py-1 text-[11px] font-black text-gray-500"
+                    >
+                      아니오
+                    </button>
+                  </div>
+                </div>
               )}
-            >
-              <CheckCircle2 className={cn("w-5 h-5", item.checked ? "text-emerald-500" : "text-gray-200")} />
-              <span className="text-sm font-medium">{item.label}</span>
+              {item.checked && item.remark !== undefined && (
+                <div className="ml-8 space-y-1">
+                  <textarea
+                    className="w-full min-h-[72px] rounded-xl border border-emerald-100 bg-white p-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                    placeholder="점검 의견을 입력하세요..."
+                    value={item.remark}
+                    onChange={e => handleCheckRemarkChange(item.id, e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleCheckRemarkChange(item.id, undefined)}
+                    className="text-[10px] font-bold text-gray-400 hover:text-red-500"
+                  >
+                    의견 입력 취소
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>

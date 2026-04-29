@@ -191,7 +191,7 @@ export const LogDetail: React.FC<LogDetailProps> = ({ log, onEdit, onDelete, onB
             <section className="mb-6">
               <h3 className="text-[11px] font-black text-gray-900 mb-2 flex items-center gap-2">
                 <div className="w-1 h-3 bg-gray-900" />
-                {getSectionNum()}. 인원 투입 현황
+                {getSectionNum()}. 작업인원
               </h3>
               <div className="grid grid-cols-3 gap-2">
                 <div className="p-2 flex flex-col items-center justify-center bg-blue-50/30 border border-blue-100 rounded-sm">
@@ -216,13 +216,20 @@ export const LogDetail: React.FC<LogDetailProps> = ({ log, onEdit, onDelete, onB
             <div className="grid grid-cols-2 gap-x-4 gap-y-1">
               {log.safetyChecks?.map(item => (
                 <div key={item.id} className={cn(
-                  "flex items-center gap-2 p-1 border-b border-gray-50",
+                  "p-1 border-b border-gray-50",
                   item.checked ? "opacity-100" : "opacity-40"
                 )}>
-                  <CheckCircle2 className={cn("w-3 h-3", item.checked ? "text-emerald-500" : "text-gray-300")} />
-                  <span className={cn("text-[10px] font-bold", item.checked ? "text-gray-900" : "text-gray-400")}>
-                    {item.label}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className={cn("w-3 h-3", item.checked ? "text-emerald-500" : "text-gray-300")} />
+                    <span className={cn("text-[10px] font-bold", item.checked ? "text-gray-900" : "text-gray-400")}>
+                      {item.label}
+                    </span>
+                  </div>
+                  {item.checked && item.remark?.trim() && (
+                    <p className="mt-1 pl-5 text-[9px] font-medium leading-relaxed text-gray-600 whitespace-pre-wrap">
+                      의견: {item.remark}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
