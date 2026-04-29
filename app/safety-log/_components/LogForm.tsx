@@ -27,6 +27,8 @@ const DEFAULT_CHECK_ITEMS: string[] = [
   '비상구 및 대피로 확보 여부'
 ];
 
+const MANPOWER_SELECT_PREFIX = '__select_affiliation__';
+
 export const LogForm: React.FC<LogFormProps> = ({ initialData, onSubmit, onCancel, submitting }) => {
   const { user, userProfile } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -98,6 +100,16 @@ export const LogForm: React.FC<LogFormProps> = ({ initialData, onSubmit, onCance
     [affiliationOptionItems]
   );
 
+  const isPendingAffiliation = (affiliation: string) => affiliation.startsWith(MANPOWER_SELECT_PREFIX);
+
+  const makePendingAffiliation = (details: Record<string, number>) => {
+    let index = 1;
+    while (Object.prototype.hasOwnProperty.call(details, `${MANPOWER_SELECT_PREFIX}${index}`)) {
+      index += 1;
+    }
+    return `${MANPOWER_SELECT_PREFIX}${index}`;
+  };
+
   const getSelectableAffiliationOptions = (details: Record<string, number>, currentAffiliation: string) => {
     return affiliationOptionItems.filter(
       (option) => option.value === currentAffiliation || !Object.prototype.hasOwnProperty.call(details, option.value)
@@ -123,10 +135,9 @@ export const LogForm: React.FC<LogFormProps> = ({ initialData, onSubmit, onCance
     if (formData.manpower) {
       setFormData(prev => ({ ...prev, manpower: null as any }));
     } else {
-      const firstAffiliation = affiliationOptions[0] || '직접입력';
       setFormData(prev => ({
         ...prev,
-        manpower: { total: 0, details: { [firstAffiliation]: 0 } }
+        manpower: { total: 0, details: { [MANPOWER_SELECT_PREFIX + '1']: 0 } }
       }));
     }
   };
@@ -154,10 +165,7 @@ export const LogForm: React.FC<LogFormProps> = ({ initialData, onSubmit, onCance
   const addManpowerRow = () => {
     if (!formData.manpower) return;
     const details = formData.manpower.details || {};
-    const nextPresetAffiliation = affiliationOptionItems.find(
-      (option) => !Object.prototype.hasOwnProperty.call(details, option.value)
-    )?.value;
-    const nextAffiliation = makeUniqueAffiliation(nextPresetAffiliation || '직접입력', details);
+    const nextAffiliation = makePendingAffiliation(details);
     setFormData(prev => ({
       ...prev,
       manpower: recalculateManpower({ ...details, [nextAffiliation]: 0 })
@@ -235,7 +243,14 @@ export const LogForm: React.FC<LogFormProps> = ({ initialData, onSubmit, onCance
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData as SafetyLog);
+    const cleanData = { ...formData };
+    if (cleanData.manpower?.details) {
+      const details = Object.fromEntries(
+        Object.entries(cleanData.manpower.details).filter(([affiliation]) => !isPendingAffiliation(affiliation))
+      ) as Record<string, number>;
+      cleanData.manpower = Object.keys(details).length ? recalculateManpower(details) : undefined;
+    }
+    onSubmit(cleanData as SafetyLog);
   };
 
   const weathers: { value: Weather; icon: any; label: string }[] = [
@@ -345,6 +360,7 @@ export const LogForm: React.FC<LogFormProps> = ({ initialData, onSubmit, onCance
               {Object.entries(formData.manpower.details || {}).map(([affiliation, count]) => {
                 const details = formData.manpower?.details || {};
                 const selectableOptions = getSelectableAffiliationOptions(details, affiliation);
+                const isPending = isPendingAffiliation(affiliation);
                 const isKnownAffiliation = affiliationOptions.includes(affiliation);
                 const selectedOption = affiliationOptionItems.find((option) => option.value === affiliation);
                 const isContractor = selectedOption?.type === 'contractor';
@@ -353,10 +369,11 @@ export const LogForm: React.FC<LogFormProps> = ({ initialData, onSubmit, onCance
                     <div className="space-y-1.5">
                       <span className="text-[10px] font-bold text-gray-400 uppercase">소속</span>
                       <select
-                        value={isKnownAffiliation ? affiliation : '__custom__'}
+                        value={isPending ? affiliation : isKnownAffiliation ? affiliation : '__custom__'}
                         onChange={e => handleManpowerAffiliationChange(affiliation, e.target.value)}
                         className="h-10 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm font-semibold text-gray-800 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
                       >
+                        {isPending && <option value={affiliation}>선택하기</option>}
                         {selectableOptions.map(option => (
                           <option key={option.value} value={option.value}>
                             {option.type === 'contractor' ? `협력업체 · ${option.value}` : option.value}
@@ -370,7 +387,7 @@ export const LogForm: React.FC<LogFormProps> = ({ initialData, onSubmit, onCance
                           <span className="min-w-0 truncate">{affiliation}</span>
                         </div>
                       )}
-                      {!isKnownAffiliation && (
+                      {!isKnownAffiliation && !isPending && (
                         <Input
                           type="text"
                           value={affiliation}
@@ -384,8 +401,10 @@ export const LogForm: React.FC<LogFormProps> = ({ initialData, onSubmit, onCance
                       <Input
                         type="number"
                         min="0"
+                        disabled={isPending}
                         value={count || 0}
                         onChange={e => handleManpowerCountChange(affiliation, parseInt(e.target.value) || 0)}
+                        placeholder={isPending ? '소속 선택 후 입력' : undefined}
                       />
                     </div>
                     <button
