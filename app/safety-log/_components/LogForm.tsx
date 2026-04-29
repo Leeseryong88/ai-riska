@@ -32,7 +32,6 @@ export const LogForm: React.FC<LogFormProps> = ({ initialData, onSubmit, onCance
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isCompressing, setIsCompressing] = useState(false);
   const [contractorNames, setContractorNames] = useState<string[]>([]);
-  const [commentPromptId, setCommentPromptId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<SafetyLog>>({
     title: '',
     date: new Date().toISOString().split('T')[0],
@@ -81,10 +80,23 @@ export const LogForm: React.FC<LogFormProps> = ({ initialData, onSubmit, onCance
     loadContractors();
   }, [user]);
 
-  const affiliationOptions = useMemo(() => {
+  const affiliationOptionItems = useMemo(() => {
     const ownOrganization = userProfile?.organization?.trim();
-    return Array.from(new Set([ownOrganization, ...contractorNames].filter(Boolean) as string[]));
+    const items: Array<{ value: string; type: 'own' | 'contractor' }> = [];
+    if (ownOrganization) items.push({ value: ownOrganization, type: 'own' });
+    contractorNames.forEach((name) => items.push({ value: name, type: 'contractor' }));
+
+    const unique = new Map<string, { value: string; type: 'own' | 'contractor' }>();
+    items.forEach((item) => {
+      if (!unique.has(item.value)) unique.set(item.value, item);
+    });
+    return Array.from(unique.values());
   }, [contractorNames, userProfile?.organization]);
+
+  const affiliationOptions = useMemo(
+    () => affiliationOptionItems.map((option) => option.value),
+    [affiliationOptionItems]
+  );
 
   const makeUniqueAffiliation = (base: string, details: Record<string, number>, exclude?: string) => {
     const cleanBase = base.trim() || '직접입력';
@@ -161,7 +173,6 @@ export const LogForm: React.FC<LogFormProps> = ({ initialData, onSubmit, onCance
           : item
       )
     }));
-    setCommentPromptId(null);
   };
 
   const handleCheckRemarkChange = (id: string, remark: string | undefined) => {
@@ -316,9 +327,16 @@ export const LogForm: React.FC<LogFormProps> = ({ initialData, onSubmit, onCance
               <span className="text-xs font-bold text-gray-500">총 투입 인원</span>
               <span className="text-sm font-black text-blue-600">{formData.manpower.total}명</span>
             </div>
+            {contractorNames.length === 0 && (
+              <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700">
+                협력업체를 등록하여 선택할 수 있습니다.
+              </div>
+            )}
             <div className="space-y-3">
               {Object.entries(formData.manpower.details || {}).map(([affiliation, count]) => {
                 const isKnownAffiliation = affiliationOptions.includes(affiliation);
+                const selectedOption = affiliationOptionItems.find((option) => option.value === affiliation);
+                const isContractor = selectedOption?.type === 'contractor';
                 return (
                   <div key={affiliation} className="grid gap-2 rounded-xl border border-gray-100 bg-white p-3 sm:grid-cols-[minmax(0,1fr)_8rem_auto] sm:items-end">
                     <div className="space-y-1.5">
@@ -328,11 +346,19 @@ export const LogForm: React.FC<LogFormProps> = ({ initialData, onSubmit, onCance
                         onChange={e => handleManpowerAffiliationChange(affiliation, e.target.value)}
                         className="h-10 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm font-semibold text-gray-800 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
                       >
-                        {affiliationOptions.map(option => (
-                          <option key={option} value={option}>{option}</option>
+                        {affiliationOptionItems.map(option => (
+                          <option key={option.value} value={option.value}>
+                            {option.type === 'contractor' ? `협력업체 · ${option.value}` : option.value}
+                          </option>
                         ))}
                         <option value="__custom__">직접입력</option>
                       </select>
+                      {isContractor && (
+                        <div className="flex items-center gap-2 rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
+                          <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-black text-white">협력업체</span>
+                          <span className="min-w-0 truncate">{affiliation}</span>
+                        </div>
+                      )}
                       {!isKnownAffiliation && (
                         <Input
                           type="text"
@@ -453,7 +479,7 @@ export const LogForm: React.FC<LogFormProps> = ({ initialData, onSubmit, onCance
                     type="button"
                     onClick={(event) => {
                       event.stopPropagation();
-                      setCommentPromptId(item.id);
+                      handleCheckRemarkChange(item.id, '');
                     }}
                     className="rounded-lg p-1.5 text-emerald-600 transition hover:bg-white"
                     title="의견 추가"
@@ -463,30 +489,6 @@ export const LogForm: React.FC<LogFormProps> = ({ initialData, onSubmit, onCance
                   </button>
                 )}
               </div>
-              {commentPromptId === item.id && (
-                <div className="ml-8 flex items-center justify-between gap-3 rounded-xl border border-emerald-100 bg-emerald-50/70 px-3 py-2">
-                  <p className="text-xs font-bold text-emerald-700">이 점검 항목에 의견을 추가하시겠습니까?</p>
-                  <div className="flex gap-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        handleCheckRemarkChange(item.id, '');
-                        setCommentPromptId(null);
-                      }}
-                      className="rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-black text-white"
-                    >
-                      예
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setCommentPromptId(null)}
-                      className="rounded-lg bg-white px-2.5 py-1 text-[11px] font-black text-gray-500"
-                    >
-                      아니오
-                    </button>
-                  </div>
-                </div>
-              )}
               {item.checked && item.remark !== undefined && (
                 <div className="ml-8 space-y-1">
                   <textarea
