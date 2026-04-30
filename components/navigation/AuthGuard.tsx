@@ -18,6 +18,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
       path.startsWith('/worker-feedback/v/')
     );
   };
+  const isPublic = isPublicPath(pathname);
 
   useEffect(() => {
     if (!loading) {
@@ -26,16 +27,16 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
         if (user?.emailVerified && userProfile) {
           router.push('/');
         }
-      } else if (!isPublicPath(pathname)) {
+      } else if (!isPublic) {
         // 그 외 비공개 페이지에서는 인증된 유저와 프로필이 모두 필요함
         if (!user?.emailVerified || !userProfile) {
           router.push('/login');
         }
       }
     }
-  }, [user, userProfile, loading, pathname, router]);
+  }, [user, userProfile, loading, pathname, router, isPublic]);
 
-  if (loading) {
+  if (loading && !isPublic) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
@@ -44,7 +45,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   // 인증이 필요 없는 페이지거나 이메일 인증까지 완료된 경우 자식 컴포넌트 렌더링
-  if (isPublicPath(pathname) || (user?.emailVerified && userProfile)) {
+  if (isPublic || (user?.emailVerified && userProfile)) {
     return <>{children}</>;
   }
 
