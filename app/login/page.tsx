@@ -15,6 +15,13 @@ import { doc, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
 
+type VerificationPopup = {
+  title: string;
+  message: string;
+};
+
+const VERIFICATION_POPUP_STORAGE_KEY = 'authVerificationPopup';
+
 export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
@@ -31,10 +38,7 @@ export default function LoginPage() {
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [activeTermsModal, setActiveTermsModal] = useState<'privacy' | 'service' | null>(null);
-  const [verificationPopup, setVerificationPopup] = useState<{
-    title: string;
-    message: string;
-  } | null>(null);
+  const [verificationPopup, setVerificationPopup] = useState<VerificationPopup | null>(null);
   
   const router = useRouter();
   const { user, userProfile, loading: authLoading } = useAuth();
@@ -48,6 +52,33 @@ export default function LoginPage() {
   ];
   const isPasswordReady = passwordRequirements.every((requirement) => requirement.met);
   const passwordMismatch = isSignUp && confirmPassword.length > 0 && password !== confirmPassword;
+
+  const openVerificationPopup = (popup: VerificationPopup) => {
+    setVerificationPopup(popup);
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.setItem(VERIFICATION_POPUP_STORAGE_KEY, JSON.stringify(popup));
+    }
+  };
+
+  const closeVerificationPopup = () => {
+    setVerificationPopup(null);
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.removeItem(VERIFICATION_POPUP_STORAGE_KEY);
+    }
+  };
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const storedPopup = window.sessionStorage.getItem(VERIFICATION_POPUP_STORAGE_KEY);
+    if (!storedPopup) return;
+
+    try {
+      setVerificationPopup(JSON.parse(storedPopup) as VerificationPopup);
+    } catch {
+      window.sessionStorage.removeItem(VERIFICATION_POPUP_STORAGE_KEY);
+    }
+  }, []);
 
   useEffect(() => {
     if (!authLoading && user && user.emailVerified && userProfile) {
@@ -133,7 +164,7 @@ export default function LoginPage() {
 
     try {
       await sendPasswordResetEmail(auth, targetEmail);
-      setVerificationPopup({
+      openVerificationPopup({
         title: '비밀번호 재설정 안내',
         message: `${targetEmail} 주소가 가입된 계정이라면 비밀번호 변경 링크가 발송됩니다. 메일함에서 링크를 눌러 새 비밀번호를 설정한 뒤 다시 로그인해주세요. 메일이 보이지 않으면 스팸함도 확인해주세요.`,
       });
@@ -406,7 +437,7 @@ export default function LoginPage() {
         const signUpEmail = currentUser?.email || normalizedEmail;
         setIsSignUp(false);
         resetSignUpState();
-        setVerificationPopup({
+        openVerificationPopup({
           title: '인증 메일을 보냈습니다',
           message: `${signUpEmail} 주소로 인증 메일을 보냈습니다. 최초 로그인 전에 메일함에서 인증 링크를 눌러 계정을 활성화해주세요. 메일이 보이지 않으면 스팸함도 확인해주세요.`,
         });
@@ -423,7 +454,7 @@ export default function LoginPage() {
               throw err;
             }
           }
-          setVerificationPopup({
+          openVerificationPopup({
             title: '이메일 인증이 필요합니다',
             message: '이미 발송된 인증 메일을 확인해주세요. 메일함에서 인증 링크를 눌러 계정을 활성화한 뒤 다시 로그인할 수 있습니다. 메일이 보이지 않으면 스팸함도 확인해주세요.',
           });
@@ -740,7 +771,7 @@ export default function LoginPage() {
             <p className="mt-3 text-sm leading-6 text-gray-600">{verificationPopup.message}</p>
             <button
               type="button"
-              onClick={() => setVerificationPopup(null)}
+              onClick={closeVerificationPopup}
               className="mt-6 w-full rounded-lg bg-blue-600 p-3 font-bold text-white transition hover:bg-blue-700"
             >
               확인
