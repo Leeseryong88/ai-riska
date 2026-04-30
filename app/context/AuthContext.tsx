@@ -19,8 +19,10 @@ export interface UserProfile {
   terms?: {
     privacyAgreed?: boolean;
     privacyAgreedAt?: string;
+    privacyVersion?: string;
     serviceTermsAgreed?: boolean;
     serviceTermsAgreedAt?: string;
+    serviceTermsVersion?: string;
     version?: string;
   };
 }
